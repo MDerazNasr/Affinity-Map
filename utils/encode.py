@@ -12,7 +12,7 @@ for i, a in enumerate(AA): #1-20
 aa_to_idx["PAD"] = 0 #padding token
 
 test = "ACDDEFGHIKLMNPQRS" #encoder function
-def encode_sequence(seq, max_len=400):
+def encode_sequence(seq, max_len=3000): #update to 3000 from 400
     """ Convert amino acid string to a fixed length tensor of integers"""
     ids = []
     for a in seq[:max_len]: #:max_len so it truncates longer sequences so it doesnt ruin memory
@@ -34,7 +34,7 @@ os.makedirs("data/encoded", exist_ok=True)
 for fam, seqs in data.items():
     tensors = []
     for s in seqs: #for each family of proteins
-        tensor = encode_sequence(s, max_len=400) #convert every string to a fixed length (400) tensor
+        tensor = encode_sequence(s, max_len=3000) #convert every string to a fixed length (400) tensor
         tensors.append(tensor)
     print(f"{fam}: {len(tensors)} sequences")
     if len(tensors) == 0:

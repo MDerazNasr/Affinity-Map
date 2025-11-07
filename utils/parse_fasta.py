@@ -27,7 +27,7 @@ for fam in families:
         seq = str(record.seq)
 #3.4 Clean/filter sequences (remove any non-amino acid characters)
         seq = ''.join([c for c in seq if c in "ACDEFGHIKLMNPQRSTVWY"])
-        if 50 < len(seq) < 400: #filter extremes (note - changed upper limit to 3000 from 400)
+        if 50 < len(seq) < 3000: #filter extremes (note - changed upper limit to 3000 from 400)
             seqs.append(seq)
     ''' 
     - < 50 aa = too small (other fragments, non-functional)
