@@ -13,7 +13,7 @@ import os, json, random
 
 #3.2 loop over your families
 root = Path("data/raw")
-families = [f.stem for f in root.glob("*.fa")]
+families = [f.stem for f in root.glob("*.fasta")]
 cleaned = {}
 
 #3.3 Read each FASTA file
@@ -23,7 +23,7 @@ cleaned = {}
 # We only care about the sequence text.
 for fam in families:
     seqs = []
-    for record in SeqIO.parse(root / f"{fam}.fa", "fasta"):
+    for record in SeqIO.parse(root / f"{fam}.fasta", "fasta"):
         seq = str(record.seq)
 #3.4 Clean/filter sequences (remove any non-amino acid characters)
         seq = ''.join([c for c in seq if c in "ACDEFGHIKLMNPQRSTVWY"])

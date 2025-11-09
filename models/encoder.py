@@ -10,8 +10,9 @@ import torch.nn.functional as F
 #nn gives you layers; F gives you functional ops like relu, normalise
 
 class ProteinEncoderCNN(nn.Module):
-    def __init__(self,vocab_size=21, emb_dim=64, conv_dim=128, proj_dim=128):
+    def __init__(self, vocab_size=21, emb_dim=64, conv_dim=128, proj_dim=128):
         """
+        CNN-based encoder for protein sequences.
         Args:
             vocab_size: number of amino-acid tokens (20 + 1 for PAD)
             emb_dim: size of token embeddings
@@ -27,8 +28,8 @@ class ProteinEncoderCNN(nn.Module):
 	    padding keeps the length the same.
 	    output channels = conv_dim=128 → you can think of it as learning 128 different motif detectors.
         '''
-        self.conv1 = nn.Conv1d(emb_dim, conv_dim, kernel_size=5, padding=2) #64 -> 128
-        self.conv2 = nn.Conv1d(conv_dim, conv_dim, kernel_size=5, padding=2) #128 -> 128
+        self.conv1 = nn.Conv1d(emb_dim,  conv_dim, kernel_size=5, padding=2)
+        self.conv2 = nn.Conv1d(conv_dim, conv_dim, kernel_size=5, padding=2)
         self.conv3 = nn.Conv1d(conv_dim, conv_dim, kernel_size=3, padding=1) #128 -> 128
 
         self.dropout = nn.Dropout(0.1)
@@ -51,7 +52,7 @@ class ProteinEncoderCNN(nn.Module):
         this is your “protein fingerprint.”
         '''
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:  # x: (B, L) integers 0..20 (0 = PAD)
+    def forward(self, x):  # x: (B, L) integers 0..20 (0 = PAD)
         """
         Forward pass for a batch of tokenized protein sequences.
 
@@ -65,7 +66,19 @@ class ProteinEncoderCNN(nn.Module):
         """
         # Step 1: Token embedding
         # x: (B, L) -> (B, L, E)
+        if x.dim() == 1:
+            x = x.unsqueeze(0)
+        if x.dtype != torch.long:
+            x = x.long()
+        assert x.dim() == 2, f"Encoder expects (B,L); got {tuple(x.shape)}"
+
+        B, L = x.shape
         x = self.embedding(x)
+        if x is None or x.dim() != 3:
+            raise RuntimeError(
+                f"Embedding failed: expected (B,L,E), got {None if x is None else tuple(x.shape)}. "
+                "Check that self.embedding = nn.Embedding(num_embeddings=21, embedding_dim=64, padding_idx=0)."
+            )
 
         # Step 2: Permute for Conv1d input (channels-first)
         # (B, L, E) -> (B, E, L)
@@ -86,6 +99,6 @@ class ProteinEncoderCNN(nn.Module):
 
         # Step 6: L2 normalization (important for ProtoNets)
         # Ensures distances are meaningful and consistent across proteins
-        x = F.normalize(x, p=2, dim=-1) # (B, proj_dim)
+        x = F.normalize(x, p=2, dim=-1, eps=1e-8) # (B, proj_dim)
 
         return x

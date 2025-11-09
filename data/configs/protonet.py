@@ -1,4 +1,5 @@
 #configs/protonet.py
+import torch
 '''
 This config file will hold:
 - our encoded data
@@ -23,10 +24,15 @@ CONF = dict(
     episodes_per_epoch = 200, #how many samples per episode for every epoch
     val_episodes=100,  #episodes to evaluate/validate per epoch after an episode for the epoch
     epochs = 10, #full passes over the (episodes) budget
-    lr = 1e-3,  #adam learning rate
+    lr = 5e-4,  #adam learning rate
+    val_N = 5,
+    max_len = 400,
+    device =  "mps" if torch.backends.mps.is_available() else (
+        "cuda" if torch.cuda.is_available() else "cpu"
+    ),
 
     #metric/head
-    metric = "euclidean", # either euclidean or cosine protonet distances
+    metric = "cosine", # either euclidean or cosine protonet distances
     #reproducibility
     seed = 42, #RNG seed for consistent sampling: Fixes random number generators so your episodes and results are reproducible
 )

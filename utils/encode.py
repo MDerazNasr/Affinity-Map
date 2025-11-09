@@ -48,7 +48,7 @@ for fam, seqs in data.items():
 print("Encoded sequences have been saved to data/encoded/")
 
 
-sample = torch.load("data/encoded/C2H2.pt")
+sample = torch.load("data/encoded/Antenna.pt")
 print(sample.keys())  # dict_keys(['X', 'lengths'])
 print(sample["X"].shape, sample["lengths"].shape)
 

@@ -4,6 +4,7 @@
 import torch
 import torch.nn.functional as F
 
+@torch.no_grad()
 def compute_prototypes(z_support: torch.Tensor, 
                        y_support: torch.Tensor, 
                        N: int):
@@ -22,17 +23,22 @@ def compute_prototypes(z_support: torch.Tensor,
     For each class c, we select embeddings where y_support == c 
     and take the mean along the 0-axis → that’s the class prototype (a centroid in embedding space).
 	'''
-    D = z_support.shape[-1] #embedding dimension
-    protos = torch.zeros(N,D, device= z_support.device)
+    # D = z_support.shape[-1] #embedding dimension
+    D = z_support.size(-1)
+    protos = torch.zeros(N,D, device= z_support.device, dtype=z_support.dtype)
     for c in range(N):
         #computing the average embedding for class c
         #“For class c, find all embeddings that belong to that class and take their average.”
-        protos[c] = z_support[y_support == c].mean(0) 
+        m = (y_support == c)
+        if not torch.any(m):
+            raise RuntimeError(f"Empty support set for class {c}")
+        protos[c] = z_support[m].mean(0) 
+    protos = F.normalize(protos, p=2, dim=1, eps=1e-8)
     return protos
 
 def prototypical_logits(z_query: torch.Tensor,
                           protos: torch.Tensor, 
-                          metric="euclidean"):
+                          metric="cosine"):
     """
         Compute similarity (negative distance) between each query and each prototype.
         Args:
@@ -42,17 +48,26 @@ def prototypical_logits(z_query: torch.Tensor,
         Returns:
             logits:  Tensor (N*Q, N)  -> higher = more similar
     """
-    if metric == "cosine":
+    m = (metric or "cosine").lower()
+    if m in ("cos", "cosine", "cos_sim", "cos_similarity"):
         #Normalize to unit length, then take dot product
-        q = F.normalize(z_query, p=2, dim=-1)
-        p = F.normalize(protos, p=2, dim=-1)
-        return q @ p.T #cosine similarity (N*Q, N)
-    
+        zq = F.normalize(z_query, p=2, dim=-1, eps=1e-8)
+        pp = F.normalize(protos, p=2, dim=-1, eps=1e-8)
+        return zq @ pp.t() #cosine similarity as logits(N*Q, N)
     #Euclidean version
-    q2 = (z_query**2).sum(1, keepdim=True) #(N*Q, 1)
-    p2 = (protos**2).sum(1).unsqueeze(0) #(1, N)
-    qp = z_query @ protos.T #(N*Q, N)
-    return - (q2 + p2 - 2*qp) #negative L2 distance
+    if m in ("euclid", "euclidean", "l2", "sqeuclidean", "sq_l2"):
+        # Stable negative squared Euclidean (no torch.cdist → safer on Apple MPS)
+        # ||a-b||^2 = ||a||^2 + ||b||^2 - 2 a·b
+        q2 = (z_query**2).sum(dim=1, keepdim=True)        # (Q,1)
+        p2 = (protos**2).sum(dim=1, keepdim=True).t() # (1,N)
+        cross = z_query @ protos.t()                      # (Q,N)
+        d2 = q2 + p2 - 2.0 * cross
+        return -d2
+    raise ValueError(f"Unknown metric: {metric} (supported: cosine, euclidean)")
+    # q2 = (z_query**2).sum(1, keepdim=True) #(N*Q, 1)
+    # p2 = (protos**2).sum(1).unsqueeze(0) #(1, N)
+    # qp = z_query @ protos.T #(N*Q, N)
+    # return - (q2 + p2 - 2*qp) #negative L2 distance
 
     '''
         Case 1: Cosine metric
