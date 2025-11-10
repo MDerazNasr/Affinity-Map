@@ -1,22 +1,17 @@
-Here’s a clean, temporary README for your repo — short, professional, and clear enough for anyone visiting your GitHub to immediately understand what the project is:
-
-⸻
-
-🧬 Protein Few-Shot Learning
+### Protein Few-Shot Learning
 
 Meta-learning framework for protein family classification using Prototypical Networks.
 Trains a neural encoder to embed raw amino acid sequences into a metric space where proteins from the same family cluster together — enabling few-shot recognition of unseen families.
 
 ⸻
-
-🚀 Project Overview
+## Project Overview
 
 This project applies few-shot learning (Prototypical Networks) to bioinformatics, teaching a model to generalize to new protein families using only a handful of examples.
 It leverages deep embeddings and distance-based reasoning to identify functional or structural similarities between proteins.
 
 ⸻
 
-🧠 Key Features
+## Key Features
 	•	Protein sequence preprocessing from Pfam FASTA files
 	•	1D-CNN encoder trained on amino-acid token sequences
 	•	Few-shot learning episodes via Prototypical Networks
@@ -24,8 +19,7 @@ It leverages deep embeddings and distance-based reasoning to identify functional
 	•	Compatible with PyTorch + MPS/CUDA
 
 ⸻
-
-🧩 Tech Stack
+## Tech Stack
 	•	Python 3.9+
 	•	PyTorch
 	•	Biopython
@@ -34,8 +28,7 @@ It leverages deep embeddings and distance-based reasoning to identify functional
 	•	(Optional upcoming): Streamlit / Next.js dashboard for interactive analysis
 
 ⸻
-
-📂 Repository Structure
+ ## Repository Structure
 
 Protein-fewshot/
 │
@@ -64,7 +57,7 @@ Protein-fewshot/
 
 ⸻
 
-🧪 Quick Start
+ ## Quick Start
 
 git clone https://github.com/<your-username>/Protein-fewshot.git
 cd Protein-fewshot
@@ -81,12 +74,8 @@ jupyter notebook notebooks/day4_evaluation.ipynb
 
 ⸻
 
-🧭 Next Steps
+## Next Steps
 	•	✅ Model training (done)
 	•	✅ Evaluation and visualization
 	•	🔜 Interactive web dashboard for protein embeddings
 	•	🔜 Zero-shot generalization experiments
-
-⸻
-
-Would you like me to make it sound a bit more academic-style (for professors and grad researchers) or more recruiter/portfolio-style (shorter and more visually striking)?
