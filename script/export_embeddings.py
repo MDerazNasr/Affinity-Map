@@ -72,3 +72,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#python scripts/export_embeddings.py --encoded_dir data/encoded --out results/embeddings.json
+# run this when you retrain or add families
+
+
+

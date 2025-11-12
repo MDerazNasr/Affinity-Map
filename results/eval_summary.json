@@ -1,0 +1,18 @@
+{
+  "N": 5,
+  "K": 5,
+  "Q": 10,
+  "episodes": 150,
+  "metrics": {
+    "cosine": {
+      "mean_acc": 0.9125333110491435,
+      "std_acc": 0.07944966483328708
+    },
+    "euclidean": {
+      "mean_acc": 0.9135999818642934,
+      "std_acc": 0.08700406364450944
+    }
+  },
+  "checkpoint": "checkpoints/best_protonet.pt",
+  "device": "mps"
+}
