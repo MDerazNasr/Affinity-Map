@@ -1,0 +1,15 @@
+# Ignore heavy / irrelevant stuff in the build context
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+.env
+.git/
+.gitignore
+data/
+checkpoints/
+results/*.png
+scripts/
+notebooks/
