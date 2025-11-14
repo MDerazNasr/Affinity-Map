@@ -174,6 +174,7 @@ class EvalStats:
     std: float
     per_episode: List[float]
 
+#Running a few episodes to measure performance on average
 @torch.no_grad()
 def run_eval(model: torch.nn.Module, sampler, episodes: int = 150,metric: str = "cosine") -> EvalStats:
     ''' Run Many episodes and return mean +/- std and all episode accuracies'''
@@ -189,4 +190,131 @@ def run_eval(model: torch.nn.Module, sampler, episodes: int = 150,metric: str = 
         std = float(vals_np.std()),
         per_episode = list(vals_np),
     )
-#Confusion matrices
+#Confusion matrices 
+@torch.no_grad()
+def confusion_over_episodes(
+    model: torch.nn.Module,
+    sampler, 
+    epsiodes: int = 50,
+    metric: str = "cosine",
+    verbose: bool = False,
+) -> np.ndarray:
+    '''
+    Average (episode-local) confusion matrix over several episodes.
+
+    Returns:
+        C_avg: (C,C) numpy array, where C is the number
+                classes per episode (assumed fixed).
+    '''
+    C_accum = None #running total of confusion matrices
+    used = 0 #how many episodes we succesfully processed
+    skipped = 0 #how many episodes break (shape mismatcj, empty support sets)
+
+    for ep in range(episodes): #loop over episodes
+        try:
+            #sample an episode → support inputs + labels, query inputs + labels (50 ep)
+            sx, sy, qx, qy = sampler.sample_episode()
+            
+            # Fix to shape (B, )
+            
+            sy = ensure_1d_labels(sy)
+            qy = ensure_1d_labels(qy)
+            # encode support + query seq. -> (B, D) embeddings
+            z_s = encode(model, sx)
+            z_q = encode(model, qx)
+            #remap labels to 0..C-1
+            '''
+            12 -> 0
+            50 -> 1
+            7  -> 2
+            '''
+            sy_c, classes, remap = remap_to_contiguos(sy)
+            qy_c = qy.clone()
+
+            for orig, idx in remap.items():
+                qy_c[qy == orig] = idx
+            
+            '''
+                - Compute prototypes for each class
+                - Compute the logits between queries and prototypes
+                - argmax(1) picks the predicted class index (0..C-1)
+                - Convert predictions and true labels to NumPy for sklearn   
+            '''
+            P = compute_prototypes(z_s, sy_c)
+            L = prototypical_logits(z_q, P, metric)
+            pred = L.argmax(1).cpu().numpy()
+            true = qy_c.cpu().numpy()
+            #this creates a (C,C) confusion matrix, normalised by row
+            #IMP - normalize = true means each row sums to 1
+            #Row c = probabilities of predicting each class.
+            C_ep = int(P.shape[0])
+            cm = confusion_matrix(
+                true, 
+                pred, 
+                labels=list(range(C_ep)),
+                normalize="true", #this means each row sums to 1
+            )
+            #accumulate metrics
+
+            if C_accum is None: #first time -> initialize accumulator
+                C_accum = np.zeros_like(cm, dtype=np.float64)
+            #add this episodes confusion matrix to the total
+            C_accum += cm
+            used += 1
+        # if anything breaks (invalid episode, missing labels),
+        # skipping instead of allowing to crash run
+        except Exception as e:
+            skipped += 1
+            if verbose:
+                print(f"[confusion] skip episode {ep}: {type(e).__name__}: {e}")
+            continue
+    # stop if nothing works
+    if used == 0:
+        raise RuntimeError(
+            f"All episodes skipped (used={used}, Check sampler shapes / label formats."
+        )
+    #announce when you skip
+    if verbose and skipped:
+        print(f"[confusion] used={used}, skipped={skipped}")
+    
+    #average sums -> results in mean confusion matrix for all episodes and return
+    return C_accum / used
+    '''
+        A confusion matrix is a table that shows:
+        - For each true class (rows), how often we PREDICTED each class (columns).
+
+        Example for 3 classes. 
+            true\pred 0 1 2
+            0         10 2 3
+            1         0 15 5
+            2         1 4 12
+            row = what the answer should have been
+            column = what the model predicted
+
+            row = what the answer should be
+            column - what the model predicted
+            
+            so:
+            - row 0 says: of the class 0 queries -> model predicted
+            
+            A confusion matrix is a table that shows:
+            - For each true class (rows), how often we PREDICTED each class (columns).
+
+            Example for 3 classes. 
+                true\pred 0 1 2
+                0         10 2 3
+                1         0 15 5
+                2         1 4 12
+                row = what the answer should have been
+                column = what the model predicted
+
+                row = what the answer should be
+                column - what the model predicted
+                
+                so:
+                - row 0 says: of the class 0 queries
+        
+        This function tries to compute an average confusion matrix across multiple episodes:
+
+            “On average, when the true class is c, how often does the model predict class d?”
+    '''
