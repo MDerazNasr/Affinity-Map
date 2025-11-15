@@ -4,6 +4,8 @@
 Meta-learning framework for protein family classification using Prototypical Networks.
 Trains a neural encoder to embed raw amino acid sequences into a metric space where proteins from the same family cluster together — enabling few-shot recognition of unseen families.
 
+Dashboard outlining result of model training - https://affinity-map-viz.streamlit.app/
+
 <div align="center">
 <img src="results/pca_embeddings.png" width="700px">
 </div>
