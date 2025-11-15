@@ -26,7 +26,7 @@ It leverages deep embeddings and distance-based reasoning to identify functional
 	•	Biopython
 	•	NumPy / Matplotlib / Pandas
 	•	UMAP-learn (for embedding visualization)
-	•	(Optional upcoming): Streamlit / Next.js dashboard for interactive analysis
+	•	Streamlit / Next.js dashboard for interactive analysis
 
  ## Quick Start
 
