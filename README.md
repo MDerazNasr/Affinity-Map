@@ -4,7 +4,7 @@ Meta-learning framework for protein family classification using Prototypical Net
 Trains a neural encoder to embed raw amino acid sequences into a metric space where proteins from the same family cluster together — enabling few-shot recognition of unseen families.
 
 <div align="center">
-<img src="results/pca_embeddings.png" width="420px">
+<img src="results/pca_embeddings.png" width="650px">
 </div>
 
 ## Project Overview
@@ -81,6 +81,31 @@ Saved to: results/failures.json
 
 Artifacts generated in results:
 
+<div align="center">
+<img src="results/pca_embeddings.png" width="420px">
+</div>
+
+<div align="center">
+<img src="results/confusion_cosine.png" width="420px">
+</div>
+
+<div align="center">
+<img src="results/plot_interactive.html" width="420px">
+</div>
+
+<div align="center">
+<img src="results/filtered_embeddings.csv" width="420px">
+</div>
+
+<div align="center">
+<img src="results/embeddings.json" width="420px">
+</div>
+
+<div align="center">
+<img src="results/failiures.json" width="420px">
+</div>
+
+
 pca_embeddings.png
 confusion_cosine.png
 plot_interactive.html
@@ -99,24 +124,4 @@ git clone https://github.com/<your-username>/protein-fewshot
 cd protein-fewshot
 pip install -r requirements.txt
 
-
-## Running the Pipeline
-
-1. Export embeddings
-
-python scripts/export_embeddings.py
-
-2. Run episodic evaluation 
-
-python scripts/eval_episodes.py
-
-3. Explore embeddings 
-
-Open:
-
-notebooks/03_visualization_dashboard.ipynb
-
-4. Dashboard
-
-streamlit run app/streamlit_app.py
 
