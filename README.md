@@ -1,4 +1,4 @@
-###Few-Shot Protein Family Classification with Prototypical Networks
+### Few-Shot Protein Family Classification with Prototypical Networks
 
 ##Metric learning for biological sequence understanding 
     • CNN encoder 
@@ -9,7 +9,7 @@
 <img src="results/pca_embeddings.png" width="420px">
 </div>
 
-##Overview
+## Overview
 
 Built an end-to-end few-shot learning system for classifying protein families using Prototypical Networks and a 1D CNN encoder.
 
@@ -22,7 +22,7 @@ Most protein families have very few labeled examples. Traditional supervised lea
 
 Few-shot learning directly addresses this by training the model to generalize from N-way K-shot episodes.
 
-##This project answers:
+## This project answers:
 
 Can we learn a general-purpose embedding space where proteins cluster by family, and can we classify new families with as few as 5 examples?
 
@@ -47,7 +47,7 @@ Query classification
 Implements Prototypical Networks
 
 
-##Results Summary
+## Results Summary
 
 5-Way 5-Shot Classification (150 episodes)
 
@@ -64,7 +64,7 @@ Saved to: results/confusion_cosine.png
 Shows which families overlap (useful for structural/functional similarity analysis).
 
 
-##Failure Case Analysis
+## Failure Case Analysis
 
 Saved to: results/failures.json
 
