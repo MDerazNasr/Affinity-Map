@@ -1,4 +1,4 @@
-### Affinity Map
+# Affinity Map
 ## Few-Shot Protein Family Classification with Prototypical Networks
 
 Meta-learning framework for protein family classification using Prototypical Networks.
