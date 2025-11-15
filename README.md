@@ -1,10 +1,11 @@
-### Few-Shot Protein Family Classification with Prototypical Networks
+### Affinity Map
+## Few-Shot Protein Family Classification with Prototypical Networks
 
 Meta-learning framework for protein family classification using Prototypical Networks.
 Trains a neural encoder to embed raw amino acid sequences into a metric space where proteins from the same family cluster together — enabling few-shot recognition of unseen families.
 
 <div align="center">
-<img src="results/pca_embeddings.png" width="650px">
+<img src="results/pca_embeddings.png" width="700px">
 </div>
 
 ## Project Overview
@@ -79,44 +80,11 @@ Saved to: results/failures.json
 
 ##Embedding Visualization
 
-Artifacts generated in results:
-
-<div align="center">
-<img src="results/pca_embeddings.png" width="420px">
-</div>
+Confusion matrix to measure model accuracy
 
 <div align="center">
 <img src="results/confusion_cosine.png" width="420px">
 </div>
-
-<div align="center">
-<img src="results/plot_interactive.html" width="420px">
-</div>
-
-<div align="center">
-<img src="results/filtered_embeddings.csv" width="420px">
-</div>
-
-<div align="center">
-<img src="results/embeddings.json" width="420px">
-</div>
-
-<div align="center">
-<img src="results/failiures.json" width="420px">
-</div>
-
-
-pca_embeddings.png
-confusion_cosine.png
-plot_interactive.html
-filtered_embeddings.csv
-embeddings.json
-kq_grid.png
-failures.json
-summary.json
-
-Notebook:
-notebooks/03_visualization_dashboard.ipynb
 
 Installation
 
