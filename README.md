@@ -1,6 +1,6 @@
-Few-Shot Protein Family Classification with Prototypical Networks
+###Few-Shot Protein Family Classification with Prototypical Networks
 
-Metric learning for biological sequence understanding 
+##Metric learning for biological sequence understanding 
     • CNN encoder 
     • Embedding analysis 
     • Interactive visualization
@@ -9,11 +9,11 @@ Metric learning for biological sequence understanding
 <img src="results/pca_embeddings.png" width="420px">
 </div>
 
-Overview
+##Overview
 
 Built an end-to-end few-shot learning system for classifying protein families using Prototypical Networks and a 1D CNN encoder.
 
-Motivation
+##Motivation
 
 Most protein families have very few labeled examples. Traditional supervised learning fails when:
 	•	a class has <10 sequences
@@ -22,13 +22,13 @@ Most protein families have very few labeled examples. Traditional supervised lea
 
 Few-shot learning directly addresses this by training the model to generalize from N-way K-shot episodes.
 
-This project answers:
+##This project answers:
 
 Can we learn a general-purpose embedding space where proteins cluster by family, and can we classify new families with as few as 5 examples?
 
 Spoiler: Yes
 
-1. Method Summary
+##Method Summary
 
 Protein Sequence (amino acids)
         ↓
@@ -47,7 +47,7 @@ Query classification
 Implements Prototypical Networks
 
 
-📊 2. Results Summary
+##Results Summary
 
 5-Way 5-Shot Classification (150 episodes)
 
@@ -58,34 +58,20 @@ Euclidean Distance	0.914	±0.087
 Both metrics agree →
 The embedding space is cleanly separable across families.
 
-Confusion Matrix
+##Confusion Matrix
 
 Saved to: results/confusion_cosine.png
 Shows which families overlap (useful for structural/functional similarity analysis).
 
 
-Failure Case Analysis
+##Failure Case Analysis
 
 Saved to: results/failures.json
 
 
-Embedding Visualization
+##Embedding Visualization
 
-PCA + UMAP projections
-
-Interactive analysis dashboard (Plotly)
-
-Family search & filtering
-
-Hover tooltips (norm, distances, family)
-
-Nearest-neighbor inspection
-
-Export filtered CSV / HTML
-
-Visual anatomy of embedding clusters
-
-Artifacts generated in results/:
+Artifacts generated in results:
 
 pca_embeddings.png
 confusion_cosine.png
@@ -106,7 +92,7 @@ cd protein-fewshot
 pip install -r requirements.txt
 
 
-Running the Pipeline
+## Running the Pipeline
 
 1. Export embeddings
 
@@ -122,25 +108,7 @@ Open:
 
 notebooks/03_visualization_dashboard.ipynb
 
-4. Optional Streamlit Dashboard
+4. Dashboard
 
 streamlit run app/streamlit_app.py
 
-
-⸻
-
-Qualitative Tools
-
-Nearest-Neighbour Lookup
-
-nearest_neighbours(idx=10, k=10)
-
-Family Similarity Exploration
-
-Inspect families that naturally cluster in embedding space.
-
-Failure Inspection
-
-Open the JSON:
-
-results/failures.json
