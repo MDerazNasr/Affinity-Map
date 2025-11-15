@@ -1,4 +1,4 @@
-#!/Users/mderaznasr/Documents/GitHub/Protein-fewshot/venv/bin/python
+#!/Users/mderaznasr/Documents/GitHub/Protein-fewshot/venv/bin/python3
 import sys
 from nbformat.sign import TrustNotebookApp
 if __name__ == '__main__':
