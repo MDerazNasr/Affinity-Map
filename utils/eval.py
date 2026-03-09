@@ -195,7 +195,7 @@ def run_eval(model: torch.nn.Module, sampler, episodes: int = 150,metric: str = 
 def confusion_over_episodes(
     model: torch.nn.Module,
     sampler, 
-    epsiodes: int = 50,
+    episodes: int = 50,
     metric: str = "cosine",
     verbose: bool = False,
 ) -> np.ndarray:

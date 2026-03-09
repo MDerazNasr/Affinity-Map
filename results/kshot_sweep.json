@@ -1,0 +1,32 @@
+{
+  "1": {
+    "mean": 0.8185999981562296,
+    "std": 0.11080029892293106,
+    "n_eligible_families": 21,
+    "n_episodes": 300
+  },
+  "2": {
+    "mean": 0.850733331044515,
+    "std": 0.10391404549089804,
+    "n_eligible_families": 21,
+    "n_episodes": 300
+  },
+  "5": {
+    "mean": 0.8686666628718376,
+    "std": 0.09122621429976123,
+    "n_eligible_families": 21,
+    "n_episodes": 300
+  },
+  "10": {
+    "mean": 0.8875999975204468,
+    "std": 0.0796214392094544,
+    "n_eligible_families": 20,
+    "n_episodes": 300
+  },
+  "20": {
+    "mean": 0.9007999974489213,
+    "std": 0.07557354312114793,
+    "n_eligible_families": 17,
+    "n_episodes": 300
+  }
+}

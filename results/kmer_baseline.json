@@ -1,0 +1,78 @@
+{
+  "random_baseline": 0.2,
+  "kmer_1nn": {
+    "1": {
+      "mean": 0.7682666666666668,
+      "std": 0.11198063324621013,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "2": {
+      "mean": 0.8544666666666668,
+      "std": 0.08900963743076114,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "5": {
+      "mean": 0.9138,
+      "std": 0.0760365701488435,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "10": {
+      "mean": 0.9342666666666666,
+      "std": 0.07528919060676786,
+      "n_eligible_families": 20,
+      "n_episodes": 300
+    },
+    "20": {
+      "mean": 0.9600666666666668,
+      "std": 0.06373901648301629,
+      "n_eligible_families": 17,
+      "n_episodes": 300
+    }
+  },
+  "kmer_protonet": {
+    "1": {
+      "mean": 0.7840666666666668,
+      "std": 0.10996118507101596,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "2": {
+      "mean": 0.8502,
+      "std": 0.10137040988375257,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "5": {
+      "mean": 0.9212666666666668,
+      "std": 0.06819380877730437,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "10": {
+      "mean": 0.9410000000000001,
+      "std": 0.06546500337330372,
+      "n_eligible_families": 20,
+      "n_episodes": 300
+    },
+    "20": {
+      "mean": 0.9612666666666666,
+      "std": 0.06296874003997716,
+      "n_eligible_families": 17,
+      "n_episodes": 300
+    }
+  },
+  "k_values": [
+    1,
+    2,
+    5,
+    10,
+    20
+  ],
+  "N": 5,
+  "Q": 10,
+  "n_episodes": 300,
+  "k_mer_size": 3
+}

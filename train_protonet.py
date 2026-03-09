@@ -1,7 +1,7 @@
 #train_protonet.py
 #end 2 end training for Prototypical Networks on your Pfam subset
 
-import os, random, torch, torch.nn as nn, torch.optim as optim
+import os, random, torch, torch.nn as nn, torch.optim as optim, csv
 from tqdm import trange
 
 from data.configs.protonet import CONF
@@ -85,7 +85,12 @@ def main():
 	#opt = “How should I fix the model?” (the weight updater).
 
     best_val = 0.0 #keeping track of the best validation accuracy model has achieved so far
-    os.makedirs("checkpoints", exist_ok=True) #	•Checkpoints are saved copies of your model (so you don’t lose progress).
+    os.makedirs("checkpoints", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
+    curve_path = "results/learning_curves.csv"
+    curve_file = open(curve_path, "w", newline="")
+    curve_writer = csv.writer(curve_file)
+    curve_writer.writerow(["epoch", "train_loss", "train_acc", "val_acc"])
 
 
     # 3 - Training epochs
@@ -143,44 +148,41 @@ def main():
                 running_loss += loss.item() #loss.item() converts the PyTorch scalar tensor (e.g. tensor(0.5234)) into a plain Python number (0.5234).
                 preds = logits.argmax(dim=1) #finds which class index has the largest logit for each query.
                 running_acc += (preds == qy).float().mean().item() #Compares predicted vs true labels elementwise → gives a boolean vector:
-    train_loss = running_loss / cfg["episodes_per_epoch"]
-    train_acc = running_acc / cfg["episodes_per_epoch"]
 
-    #validation phase
-    model.eval() #entering eval mode to ensure consistent results
-    val_accs = [] #to store accuracy from each validation episode
-    with torch.no_grad(): #turns off gradient tracking, no updates being made so memory being save 
-        for _ in range(cfg["val_episodes"]): #runs several val episodes for acccurary
-            sx, sy, qx, qy = val_sampler.sample_episode() #randomly generate val episde
-            '''
-            Feeds both support (sx) and query (qx) sequences through the encoder (ProteinEncoderCNN).
-	        Produces embeddings:
-	        z_s: support embeddings → shape (N*K, D)
-            z_q: query embeddings → shape (N*Q, D)
-            '''
-            
-            if sx.dim() == 1: sx = sx.unsqueeze(0)
-            if qx.dim() == 1: qx = qx.unsqueeze(0)
-            sx = sx.long(); qx = qx.long()
+        train_loss = running_loss / cfg["episodes_per_epoch"]
+        train_acc = running_acc / cfg["episodes_per_epoch"]
 
-            sy, qy, N_eff = remap_zero_based(sy, qy)
-            
-            z_s = model(sx); z_q = model(qx)
-            protos = compute_prototypes(z_s, sy, N_eff)
-            logits = prototypical_logits(z_q, protos, cfg["metric"])
-            val_accs.append((logits.argmax(1) == qy).float().mean().item()) #see bottom
-    val_acc = sum(val_accs) / len(val_accs)
+        #validation phase
+        model.eval() #entering eval mode to ensure consistent results
+        val_accs = [] #to store accuracy from each validation episode
+        with torch.no_grad(): #turns off gradient tracking, no updates being made so memory being save
+            for _ in range(cfg["val_episodes"]): #runs several val episodes for acccurary
+                sx, sy, qx, qy = val_sampler.sample_episode() #randomly generate val episde
+                if sx.dim() == 1: sx = sx.unsqueeze(0)
+                if qx.dim() == 1: qx = qx.unsqueeze(0)
+                sx = sx.long(); qx = qx.long()
+                sy, qy, N_eff = remap_zero_based(sy, qy)
+                z_s = model(sx); z_q = model(qx)
+                protos = compute_prototypes(z_s, sy, N_eff)
+                logits = prototypical_logits(z_q, protos, cfg["metric"])
+                val_accs.append((logits.argmax(1) == qy).float().mean().item())
+        val_acc = sum(val_accs) / len(val_accs)
 
-    print(f"Epoch {epoch:02d} | train_loss={train_loss:.4f} | train_acc={train_acc:.3f} | val_acc={val_acc:.3f}")
+        print(f"Epoch {epoch:02d} | train_loss={train_loss:.4f} | train_acc={train_acc:.3f} | val_acc={val_acc:.3f}")
+        curve_writer.writerow([epoch, round(train_loss, 6), round(train_acc, 6), round(val_acc, 6)])
+        curve_file.flush()
 
-    # checkpoint best
-    if val_acc > best_val:
-        best_val = val_acc
-        torch.save(
-            {"state_dict": model.state_dict(), "config": cfg},
-            "checkpoints/best_protonet.pt"
-        )
-        print(f"Saved best checkpoint (val_acc={best_val:.3f})")
+        # checkpoint best
+        if val_acc > best_val:
+            best_val = val_acc
+            torch.save(
+                {"state_dict": model.state_dict(), "config": cfg},
+                "checkpoints/best_protonet.pt"
+            )
+            print(f"Saved best checkpoint (val_acc={best_val:.3f})")
+
+    curve_file.close()
+    print(f"Learning curves saved to {curve_path}")
 
 if __name__ == "__main__":
     main()
