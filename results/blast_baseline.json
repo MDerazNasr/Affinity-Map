@@ -1,0 +1,79 @@
+{
+  "blast_version": "2.17.0",
+  "scoring": "bit-score, evalue<=10, BLOSUM62 (default)",
+  "random_baseline": 0.2,
+  "blast_1nn": {
+    "1": {
+      "mean": 0.8768666666666667,
+      "std": 0.09510441045970942,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "2": {
+      "mean": 0.9309333333333333,
+      "std": 0.07853955832713998,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "5": {
+      "mean": 0.9619999999999999,
+      "std": 0.06892508009909504,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "10": {
+      "mean": 0.9687333333333333,
+      "std": 0.0708782681002357,
+      "n_eligible_families": 20,
+      "n_episodes": 300
+    },
+    "20": {
+      "mean": 0.9857333333333335,
+      "std": 0.05963608154651194,
+      "n_eligible_families": 17,
+      "n_episodes": 300
+    }
+  },
+  "blast_protonet": {
+    "1": {
+      "mean": 0.8852666666666666,
+      "std": 0.09470090929987009,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "2": {
+      "mean": 0.9215333333333333,
+      "std": 0.08062453445171361,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "5": {
+      "mean": 0.9709333333333332,
+      "std": 0.05146321231930846,
+      "n_eligible_families": 21,
+      "n_episodes": 300
+    },
+    "10": {
+      "mean": 0.98,
+      "std": 0.0553052137385497,
+      "n_eligible_families": 20,
+      "n_episodes": 300
+    },
+    "20": {
+      "mean": 0.9858666666666667,
+      "std": 0.057319998449251744,
+      "n_eligible_families": 17,
+      "n_episodes": 300
+    }
+  },
+  "k_values": [
+    1,
+    2,
+    5,
+    10,
+    20
+  ],
+  "N": 5,
+  "Q": 10,
+  "n_episodes": 300
+}
