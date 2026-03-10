@@ -80,6 +80,7 @@ def main():
     # 2 - Model, optimizer, loss
     model = ProteinEncoderCNN(proj_dim=cfg["proj_dim"]).to(device)
     opt = optim.Adam(model.parameters(), lr=cfg["lr"])
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg["epochs"])
     criterion = nn.CrossEntropyLoss()
     #criterion = “How wrong was the model?” (the error calculator).
 	#opt = “How should I fix the model?” (the weight updater).
@@ -171,6 +172,8 @@ def main():
         print(f"Epoch {epoch:02d} | train_loss={train_loss:.4f} | train_acc={train_acc:.3f} | val_acc={val_acc:.3f}")
         curve_writer.writerow([epoch, round(train_loss, 6), round(train_acc, 6), round(val_acc, 6)])
         curve_file.flush()
+
+        scheduler.step()
 
         # checkpoint best
         if val_acc > best_val:

@@ -23,7 +23,7 @@ CONF = dict(
     #Training schedule
     episodes_per_epoch = 200, #how many samples per episode for every epoch
     val_episodes=100,  #episodes to evaluate/validate per epoch after an episode for the epoch
-    epochs = 10, #full passes over the (episodes) budget
+    epochs = 50, #full passes over the (episodes) budget
     lr = 5e-4,  #adam learning rate
     val_N = 5,
     max_len = 400,
