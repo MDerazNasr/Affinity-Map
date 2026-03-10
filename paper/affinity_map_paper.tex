@@ -79,8 +79,9 @@ distribution.  On the 21-family benchmark, the CNN ProtoNet achieves
 \textbf{86.9\%} 5-way 5-shot accuracy against a strong BLAST upper bound
 of 97.1\%.  Scaling to 155 families reveals that 3-mer frequency baselines
 are surprisingly competitive: k-mer ProtoNet reaches 86.9\% at $K=5$ vs.\
-CNN ProtoNet at 74.8\%, motivating deeper investigation of pre-training and
-harder episodic sampling as next steps.  Real per-epoch learning curves, a
+CNN ProtoNet at 76.4\%, with the gap narrowing to 1.1 percentage points
+at $K=1$ (paired Wilcoxon $p=0.022$), motivating deeper investigation of
+pre-training and harder episodic sampling as next steps.  Real per-epoch learning curves, a
 named 155-family confusion matrix, and comprehensive baseline comparisons
 provide biologically interpretable diagnostics throughout.
 All code, results, and an interactive embedding dashboard are publicly available.
@@ -410,7 +411,7 @@ Algorithm~\ref{alg:training} summarises the full training procedure.
 \State Split families 80/20 into $\mathcal{F}_{\text{train}}$, $\mathcal{F}_{\text{val}}$
 \State Initialise encoder $\encoder$ with random weights; Adam optimiser with $\eta = 5\times 10^{-4}$
 \State $\mathrm{best\_val} \leftarrow 0$
-\For{epoch $= 1,\ldots,10$}
+\For{epoch $= 1,\ldots,50$}
   \For{$t = 1,\ldots, T_{\text{ep}} = 200$} \Comment{Training episodes}
     \State Sample episode $(\mathcal{S},\mathcal{Q}) \sim \mathcal{F}_{\text{train}}$
     \State Compute embeddings $\vect{z}_s = \encoder(\mathcal{S})$,
@@ -419,6 +420,7 @@ Algorithm~\ref{alg:training} summarises the full training procedure.
     \State Compute logits via Eq.~\eqref{eq:cosine}; loss via Eq.~\eqref{eq:loss}
     \State Back-propagate; clip gradients ($\|\vect{g}\|_2 \leq 1.0$); Adam step
   \EndFor
+  \State Step cosine-annealing LR scheduler ($T_{\max}=50$)
   \State Evaluate on $T_{\text{val}} = 100$ episodes from $\mathcal{F}_{\text{val}}$
   \If{$\mathrm{val\_acc} > \mathrm{best\_val}$}
     \State Save checkpoint; $\mathrm{best\_val} \leftarrow \mathrm{val\_acc}$
@@ -453,10 +455,11 @@ Table~\ref{tab:hyperparams} lists all hyperparameters.
 $N$ (ways)            & 5     & Classes per episode \\
 $K$ (shots)           & 5     & Support sequences per class \\
 $Q$ (queries)         & 10    & Query sequences per class \\
-Epochs                & 10    & Full passes over episode budget \\
+Epochs                & 50    & Full passes over episode budget \\
 Episodes / epoch      & 200   & Training episodes per epoch \\
 Val.\ episodes / epoch& 100   & Validation episodes per epoch \\
 Learning rate $\eta$  & $5\times10^{-4}$ & Adam optimiser \\
+LR schedule           & Cosine annealing & $T_{\max}=50$ epochs \\
 Gradient clip         & 1.0   & $\ell_2$ norm clipping \\
 Embedding dim $D$     & 128   & Encoder output dimension \\
 Conv channels         & 128   & All convolutional layers \\
@@ -505,31 +508,33 @@ We implement the following baselines, all using the identical episodic protocol:
 
 \subsection{Learning Dynamics}
 
-Figure~\ref{fig:curves} shows training loss and accuracy across all 10 epochs
+Figure~\ref{fig:curves} shows training loss and accuracy across all 50 epochs
 (200 episodes/epoch training, 100 validation episodes/epoch).
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{../results/fig_learning_curves.png}
   \caption{Training loss (right) and episode-level accuracy (left) per epoch
-           on the 155-family dataset (124 training / 31 validation families).
-           Training accuracy rises from 57.3\% (epoch 1) to 71.3\% (epoch 10).
-           Validation accuracy improves monotonically, peaking at \textbf{75.8\%}
-           at epoch 9 with no sign of degradation---a sharp contrast to the
-           21-family setting where val peaked at 85.4\% at epoch 3 and then
-           declined.  The best checkpoint (epoch 9, val\_acc $= 0.758$) is used
-           for all S2 evaluation.}
+           on the 155-family dataset (124 training / 31 validation families),
+           trained for 50 epochs with cosine-annealing LR ($T_{\max}=50$).
+           Training accuracy rises from 57.3\% (epoch 1) to 93.1\% (epoch 50).
+           Validation accuracy peaks at \textbf{76.6\%} at epoch 13, then
+           gradually declines---a delayed form of task-distribution overfitting
+           compared to the 21-family setting (epoch 3).  The best checkpoint
+           (epoch 13, val\_acc $= 0.766$) is used for all S2 evaluation.}
   \label{fig:curves}
 \end{figure}
 
-The absence of train/val divergence on the 155-family corpus is significant.
-In the 21-family setting, the model suffered \emph{task-distribution overfitting}:
+Training on the 155-family corpus with 50 epochs and cosine-annealing LR
+reveals a nuanced picture of generalisation.  In the 21-family setting, the
+model suffered \emph{task-distribution overfitting} as early as epoch 3:
 16 training families form a tiny episode distribution, and the encoder quickly
-memorised their compositional quirks rather than learning transferable motif
-features.  With 124 training families, the episode space is rich enough that
-the model continues to improve on unseen families throughout training, reaching
-75.8\% at epoch 9.  This confirms that dataset scale is the primary bottleneck
-in this framework, and motivates further training with more epochs.
+memorised their compositional quirks.  With 124 training families, the episode
+space is diverse enough to delay this effect: validation accuracy peaks at
+76.6\% at epoch 13 before gradually declining as training accuracy continues
+climbing to 93.1\%.  This confirms that dataset scale delays---but does not
+eliminate---task-distribution overfitting, motivating stronger regularisation
+and harder negative mining as next steps.
 
 \subsection{Few-Shot Accuracy and Baseline Comparison}
 
@@ -551,7 +556,7 @@ experimental settings.
 \textbf{Method} & \textbf{Mean (S1)} & \textbf{Mean (S2)} & \textbf{Std (S2)} & \textbf{$\Delta$ (S2)} \\
 \midrule
 Random chance           & 20.00\% & 20.00\% & --     & -- \\
-CNN ProtoNet (ours)     & 86.87\% & 74.83\% & 10.83\% & $+54.8$ pp \\
+CNN ProtoNet (ours)     & 86.87\% & 76.35\% & 10.13\% & $+56.4$ pp \\
 k-mer 1-NN              & 91.38\% & 82.95\% &  8.68\% & $+63.0$ pp \\
 k-mer ProtoNet          & 92.13\% & 86.91\% &  8.15\% & $+66.9$ pp \\
 BLAST 1-NN              & 96.20\% & n/a     & --     & -- \\
@@ -563,7 +568,7 @@ BLAST 1-NN              & 96.20\% & n/a     & --     & -- \\
 On the 21-family benchmark (S1), BLAST ProtoNet is the strongest method (97.1\%)
 and CNN ProtoNet (86.9\%) lies below all alignment-based baselines.  Scaling to
 155 families (S2) reveals that k-mer baselines remain strong: k-mer ProtoNet
-achieves 86.9\%, outperforming CNN ProtoNet at 74.8\% by 12.1 pp.  All methods
+achieves 86.9\%, outperforming CNN ProtoNet at 76.4\% by 10.5 pp.  All methods
 decline relative to S1, reflecting the genuinely harder task distribution---more
 families, more inter-family similarity, and a larger validation set (31 vs 5
 held-out families).  BLAST is excluded from S2 as the all-vs-all score matrix
@@ -582,7 +587,7 @@ $K \in \{1, 2, 5, 10, 20\}$ for all three methods.
            (ours), k-mer 1-NN, and k-mer ProtoNet on the 155-family scale-up
            (S2).  Shaded bands show $\pm1\sigma$.  k-mer methods lead CNN ProtoNet
            across all $K$ values; the gap widens from $\sim$2 pp at $K=1$ to
-           $\sim$12 pp at $K=5$ and $\sim$19 pp at $K=20$, reflecting that
+           $\sim$10 pp at $K=5$ and $\sim$16 pp at $K=20$, reflecting that
            compositional features become increasingly reliable with more support.}
   \label{fig:kshot}
 \end{figure}
@@ -601,7 +606,7 @@ $K \in \{1, 2, 5, 10, 20\}$ for all three methods.
 \textbf{Method} & $K=1$ & $K=2$ & $K=5$ & $K=10$ & $K=20$ \\
 \midrule
 Random          & 20.0 & 20.0 & 20.0 & 20.0 & 20.0 \\
-CNN ProtoNet    & 67.1$\pm$13.9 & 69.7$\pm$12.9 & 74.8$\pm$10.8 & 76.1$\pm$11.0 & 75.1$\pm$11.6 \\
+CNN ProtoNet    & 67.4$\pm$13.0 & 71.0$\pm$12.8 & 76.4$\pm$10.1 & 77.9$\pm$10.3 & 77.4$\pm$11.3 \\
 k-mer 1-NN      & 67.8$\pm$12.4 & 75.0$\pm$10.4 & 83.0$\pm$8.7  & 88.0$\pm$7.4  & 91.5$\pm$5.8  \\
 \textbf{k-mer ProtoNet} & \textbf{69.5}$\pm$12.6 & \textbf{77.1}$\pm$11.3 & \textbf{86.9}$\pm$8.2 & \textbf{91.6}$\pm$6.5 & \textbf{93.7}$\pm$5.1 \\
 \bottomrule
@@ -611,28 +616,65 @@ k-mer 1-NN      & 67.8$\pm$12.4 & 75.0$\pm$10.4 & 83.0$\pm$8.7  & 88.0$\pm$7.4  
 \noindent Three regimes emerge on the 155-family corpus:
 \begin{enumerate}[noitemsep,leftmargin=*]
   \item \textbf{$K=1$:} All three methods are within 2.4 pp of each other
-        (CNN 67.1\%, k-mer 1-NN 67.8\%, k-mer ProtoNet 69.5\%).  In the
+        (CNN 67.4\%, k-mer 1-NN 67.8\%, k-mer ProtoNet 69.5\%).  In the
         extreme low-data regime, learned CNN features and composition features
         carry comparable signal on diverse family sets.
   \item \textbf{$K=2$--$5$:} k-mer methods pull ahead rapidly as more support
         examples better characterise each family's composition profile.
-        k-mer ProtoNet reaches 86.9\% at $K=5$ vs CNN's 74.8\% ($-12.1$ pp).
+        k-mer ProtoNet reaches 86.9\% at $K=5$ vs CNN's 76.4\% ($-10.5$ pp).
   \item \textbf{$K \geq 10$:} k-mer ProtoNet saturates near 91--94\%; CNN
-        ProtoNet plateaus around 75--76\%, suggesting the encoder has reached
-        its capacity limit at 10 epochs of training on this task distribution.
+        ProtoNet plateaus around 77--78\%, suggesting the encoder has reached
+        its capacity limit on this task distribution.
 \end{enumerate}
+
+\subsection{Statistical Significance of CNN vs.\ k-mer ProtoNet}
+\label{sec:significance}
+
+To confirm that the CNN vs.\ k-mer accuracy differences are not due to
+sampling noise, we ran 1{,}000 \emph{matched} episodes per $K$ value---each
+episode using identical sampled families and sequences for both methods---and
+applied a paired Wilcoxon signed-rank test (non-parametric, no normality
+assumption required).  Effect size is reported as the rank-biserial
+correlation $r = 1 - 2W / (n(n+1)/2)$, where $W$ is the Wilcoxon statistic.
+
+\begin{table}[H]
+\centering
+\caption{Paired Wilcoxon signed-rank tests: CNN ProtoNet vs.\ k-mer ProtoNet
+         on 1{,}000 matched episodes per $K$ value (5-way, $Q=10$ queries).
+         $r$ = rank-biserial correlation effect size (0 = no effect, 1 = maximum).
+         $^{*}p < 0.05$; $^{***}p < 0.001$.}
+\label{tab:wilcoxon}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
+\toprule
+$K$ & CNN mean & k-mer mean & Diff (pp) & $p$-value & $r$ & Sig.\ \\
+\midrule
+ 1 & 66.5\% & 67.6\% & $-1.1$ & $2.2\times10^{-2}$ & 0.18 & $^{*}$   \\
+ 2 & 70.9\% & 77.0\% & $-6.1$ & $1.6\times10^{-37}$ & 0.54 & $^{***}$ \\
+ 5 & 75.4\% & 86.7\% & $-11.3$ & $5.8\times10^{-119}$ & 0.88 & $^{***}$ \\
+10 & 77.2\% & 91.0\% & $-13.9$ & $3.1\times10^{-148}$ & 0.96 & $^{***}$ \\
+20 & 77.9\% & 93.5\% & $-15.6$ & $1.3\times10^{-157}$ & 0.99 & $^{***}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+At $K \geq 2$ the k-mer advantage is overwhelming ($r > 0.5$, $p < 10^{-30}$).
+At $K=1$ the difference is statistically significant ($p=0.022$) but
+the effect size is small ($r=0.18$), confirming the two approaches are nearly
+equivalent in the extreme few-shot regime.
 
 \subsection{Episode-Level Accuracy Distribution}
 
 Figure~\ref{fig:hist} shows the empirical distribution of per-episode accuracy
-from 500 evaluation episodes.
+from 1{,}000 matched evaluation episodes.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.82\textwidth]{../results/fig_episode_hist.png}
-  \caption{Distribution of per-episode accuracy over 500 episodes (CNN ProtoNet,
+  \caption{Distribution of per-episode accuracy over 1{,}000 matched episodes (CNN ProtoNet,
            5-way 5-shot, cosine metric, 155-family S2 setting).
-           Mean $= 73.9\%$, std $= 12.1\%$.
+           Mean $= 75.4\%$, std $= 10.6\%$.
            The distribution is broader and left-shifted compared to the 21-family
            benchmark (mean 86.9\%), reflecting the harder task: more families
            with overlapping compositions and a larger episode space.  The
@@ -728,23 +770,26 @@ On the larger corpus, k-mer ProtoNet leads CNN ProtoNet across all $K$ values:
 \[
   \text{Random} \;<\; \text{CNN ProtoNet} \;<\; \text{k-mer 1-NN} \;<\; \text{k-mer ProtoNet}
 \]
-The gap is smallest at $K=1$ ($\sim$2.4 pp) and widens to $\sim$19 pp at $K=20$.
+The gap is smallest at $K=1$ ($\sim$2 pp) and widens to $\sim$16 pp at $K=20$.
 Two factors explain this:
 \begin{enumerate}[noitemsep,leftmargin=*]
-  \item \textbf{Undertraining.} The CNN trained for only 10 epochs on 124
-        families; learning curves (Figure~\ref{fig:curves}) show val accuracy
-        still rising at epoch 10, suggesting more training would close the gap.
+  \item \textbf{Task-distribution overfitting.} The CNN peaks at epoch 13 (76.6\%)
+        and then overfits; learning curves (Figure~\ref{fig:curves}) show val
+        accuracy declining after epoch 13 despite continued training.
   \item \textbf{Compositional diversity.} Across 155 families spanning metabolic,
         structural, and regulatory functions, global amino-acid composition
         remains a strong discriminator.  3-mer features compactly capture this.
 \end{enumerate}
 
 \begin{remark}
-At $K=1$, all three methods are within 2.4 pp of each other (CNN 67.1\%,
-k-mer 1-NN 67.8\%, k-mer ProtoNet 69.5\%).  The learned CNN representation
-provides comparable signal to composition features in the most challenging
-low-data regime---a promising sign that with deeper training or pre-training,
-CNN embeddings could surpass k-mer methods across the board.
+At $K=1$, all three methods are within 2.4 pp of each other (CNN 67.4\%,
+k-mer 1-NN 67.8\%, k-mer ProtoNet 69.5\%).  A paired Wilcoxon signed-rank
+test on 1{,}000 matched episodes confirms this near-parity is real but weak:
+the k-mer ProtoNet advantage is statistically significant ($p=0.022$) yet
+has a small effect size ($r=0.18$), compared to $r > 0.88$ at $K \geq 5$.
+The learned CNN representation thus provides comparable signal to composition
+features in the extreme few-shot regime---a promising sign that with deeper
+training or pre-training, CNN embeddings could surpass k-mer methods.
 \end{remark}
 
 \subsection{Overfitting, Training Dynamics, and the Effect of Scale}
@@ -752,11 +797,13 @@ CNN embeddings could surpass k-mer methods across the board.
 The 21-family experiment showed a pronounced train/val divergence at epoch 3.
 This is \emph{task-distribution overfitting}: with only 16 training families,
 the model memorises their compositional quirks rather than learning transferable
-motifs.  Scaling to 124 training families eliminates this behaviour entirely:
-validation accuracy improves monotonically across all 10 epochs (Figure~\ref{fig:curves}),
-confirming that dataset scale is the primary mitigation.  The CNN is still
-learning at epoch 10 on the 155-family corpus, suggesting that more epochs or a
-learning-rate schedule (e.g.\ cosine annealing) would yield further gains.
+motifs.  Scaling to 124 training families and training for 50 epochs with
+cosine-annealing LR delays this effect substantially: validation accuracy peaks
+at 76.6\% at epoch 13 before declining while training accuracy continues to 93.1\%.
+Dataset scale thus delays task-distribution overfitting but does not eliminate it,
+suggesting that stronger regularisation (e.g.\ sequence augmentation, harder
+negative mining) is needed to close the generalisation gap on large, diverse
+family sets.
 
 \subsection{Why Metric Independence Implies Well-Formed Geometry}
 
@@ -785,16 +832,18 @@ functional motifs appear at varying positions across family members.
 \subsection{Limitations and Future Directions}
 \label{sec:future}
 
-\paragraph{Longer training and learning rate scheduling.}
-On the 155-family corpus, val accuracy is still rising at epoch 10.  Training
-for 30--50 epochs with cosine annealing is likely to narrow the k-mer gap
-without architectural changes.
+\paragraph{Regularisation and harder episodic sampling.}
+On the 155-family corpus, val accuracy peaks at epoch 13 then declines---a form
+of task-distribution overfitting.  Sequence augmentation (random subsequence
+masking, permutation), label smoothing, or episode-level hard-negative mining
+are promising regularisation strategies to extend the accuracy plateau.
 
-\paragraph{Harder negative mining.}
-Currently, episodes sample families uniformly at random.  Sampling episodes
-that include \emph{similar} families (e.g.\ pairs with low inter-prototype
-distance from Figure~\ref{fig:heatmap}) would force the model to discriminate
-on fine-grained features rather than global composition.
+\paragraph{Curriculum and hard negative mining.}
+Extending the regularisation above, episodes currently sample families uniformly
+at random.  A curriculum that progressively includes \emph{similar} families
+(e.g.\ pairs with low inter-prototype distance from Figure~\ref{fig:heatmap})
+would force the model to discriminate on fine-grained motif features rather than
+global composition, directly targeting the gap seen at $K \geq 2$.
 
 \paragraph{Pre-trained encoders.}
 Replacing the trained-from-scratch 1D-CNN with a frozen or fine-tuned
@@ -836,14 +885,14 @@ findings are:
   \item \textbf{Two-scale empirical findings.} On the 21-family benchmark,
         CNN ProtoNet achieves 86.9\% at $K=5$ against a BLAST upper bound of
         97.1\%.  Scaling to 155 families, k-mer ProtoNet (86.9\%) outperforms
-        CNN ProtoNet (74.8\%) across all $K$ values, with the gap narrowing to
-        $\sim$2.4 pp at $K=1$.
+        CNN ProtoNet (76.4\%) across all $K$ values, with the gap narrowing to
+        $\sim$2 pp at $K=1$ ($p=0.022$, paired Wilcoxon, $r=0.18$).
 
-  \item \textbf{Dataset scale eliminates overfitting.} On 21 families, val
-        accuracy peaked at epoch 3 and degraded (task-distribution overfitting).
-        On 155 families, val accuracy improves monotonically to 75.8\% at epoch
-        9 with no degradation---confirming that family diversity is the primary
-        mitigation strategy.
+  \item \textbf{Dataset scale delays overfitting.} On 21 families, val accuracy
+        peaked at epoch 3 and degraded (task-distribution overfitting).
+        On 155 families with cosine-annealing LR, val accuracy peaks at 76.6\%
+        at epoch 13 before declining---confirming that family diversity delays
+        but does not eliminate the overfitting dynamic.
 
   \item \textbf{Named confusion matrix.} A 155-family confusion heatmap provides
         biologically interpretable error analysis, identifying systematically
@@ -851,10 +900,11 @@ findings are:
 \end{enumerate}
 
 Taken together, the results chart a clear roadmap: the architecture and episodic
-training framework scale correctly; the bottleneck is encoder capacity and
-training budget.  Pre-training, longer training schedules, and harder negative
-mining are the primary paths toward demonstrating unambiguous learned-representation
-superiority over compositional baselines on large, diverse family sets.
+training framework scale correctly; the bottleneck is task-distribution
+overfitting and encoder capacity.  Pre-training, stronger regularisation
+(augmentation, hard-negative mining), and larger family sets are the primary
+paths toward demonstrating unambiguous learned-representation superiority over
+compositional baselines.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \appendix
