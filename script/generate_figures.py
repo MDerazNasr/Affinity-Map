@@ -119,6 +119,20 @@ def fig_kshot_sweep():
                 ax.plot(ks, mus, marker, color=color, lw=1.5,
                         markersize=5, label=label)
 
+    # ESM-2 ProtoNet baseline
+    esm2_path = os.path.join(RESULTS, "esm2_results.json")
+    if os.path.exists(esm2_path):
+        with open(esm2_path) as f:
+            esm2 = json.load(f)
+        ks   = sorted([int(k) for k in esm2.keys()])
+        mus  = [esm2[str(k)]["esm2_mean"] for k in ks]
+        sigs = [esm2[str(k)]["esm2_std"]  for k in ks]
+        ax.fill_between(ks, [m-s for m,s in zip(mus,sigs)],
+                            [m+s for m,s in zip(mus,sigs)],
+                        alpha=0.10, color="#E84393")
+        ax.plot(ks, mus, "D-", color="#E84393", lw=2.0,
+                markersize=6, label="ESM-2 ProtoNet (frozen)")
+
     # BLAST baselines
     blast_path = os.path.join(RESULTS, "blast_baseline.json")
     if os.path.exists(blast_path):
