@@ -2,65 +2,65 @@
   "random_baseline": 0.2,
   "kmer_1nn": {
     "1": {
-      "mean": 0.678,
-      "std": 0.1240376286992513,
-      "n_eligible_families": 155,
+      "mean": 0.6946666666666667,
+      "std": 0.12224928993204373,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "2": {
-      "mean": 0.7498,
-      "std": 0.10421113184300418,
-      "n_eligible_families": 155,
+      "mean": 0.7677333333333333,
+      "std": 0.10694014940870222,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "5": {
-      "mean": 0.8295333333333333,
-      "std": 0.08675510871925,
-      "n_eligible_families": 155,
+      "mean": 0.8313333333333335,
+      "std": 0.09730821593724184,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "10": {
-      "mean": 0.8796666666666668,
-      "std": 0.07444834152320355,
-      "n_eligible_families": 154,
+      "mean": 0.8692,
+      "std": 0.08666041003057086,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "20": {
-      "mean": 0.9153333333333334,
-      "std": 0.05816833808486843,
-      "n_eligible_families": 151,
+      "mean": 0.8962,
+      "std": 0.07956691104556801,
+      "n_eligible_families": 24,
       "n_episodes": 300
     }
   },
   "kmer_protonet": {
     "1": {
-      "mean": 0.6945333333333333,
-      "std": 0.12549415214352508,
-      "n_eligible_families": 155,
+      "mean": 0.6968,
+      "std": 0.12533858145040577,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "2": {
-      "mean": 0.7707333333333334,
-      "std": 0.11265639006386731,
-      "n_eligible_families": 155,
+      "mean": 0.7787999999999999,
+      "std": 0.11055568732543794,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "5": {
-      "mean": 0.8690666666666668,
-      "std": 0.0815217489726242,
-      "n_eligible_families": 155,
+      "mean": 0.8621333333333333,
+      "std": 0.09347075597331082,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "10": {
-      "mean": 0.9164000000000001,
-      "std": 0.06445959975054141,
-      "n_eligible_families": 154,
+      "mean": 0.9058,
+      "std": 0.07151475372257113,
+      "n_eligible_families": 24,
       "n_episodes": 300
     },
     "20": {
-      "mean": 0.9369333333333333,
-      "std": 0.05097642156483285,
-      "n_eligible_families": 151,
+      "mean": 0.9214666666666667,
+      "std": 0.07261208959639955,
+      "n_eligible_families": 24,
       "n_episodes": 300
     }
   },

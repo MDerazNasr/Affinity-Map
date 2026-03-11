@@ -25,6 +25,7 @@ import torch
 import esm as esm_lib
 from models.encoder import ProteinEncoderCNN
 from data.configs.protonet import CONF
+from utils.splits import get_splits
 
 PROTEINS_JSON  = "data/processed/proteins.json"
 CNN_CHECKPOINT = "checkpoints/best_protonet.pt"
@@ -199,13 +200,15 @@ def main():
     # load sequences
     with open(PROTEINS_JSON) as f:
         raw = json.load(f)
-    fam_seqs = {fam: [s for s in seqs
-                      if isinstance(s, str) and all(a in AA_SET for a in s)
-                      and 10 <= len(s) <= 3000]
-                for fam, seqs in raw.items()}
-    fam_seqs = {f: s for f, s in fam_seqs.items() if s}
-    print(f"  {len(fam_seqs)} families, "
-          f"{sum(len(v) for v in fam_seqs.values())} sequences total\n")
+    all_fam_seqs = {fam: [s for s in seqs
+                          if isinstance(s, str) and all(a in AA_SET for a in s)
+                          and 10 <= len(s) <= 3000]
+                   for fam, seqs in raw.items()}
+    all_fam_seqs = {f: s for f, s in all_fam_seqs.items() if s}
+    # Use test families only
+    _, _, fam_seqs = get_splits(all_fam_seqs)
+    print(f"  {len(all_fam_seqs)} total families → using {len(fam_seqs)} test families, "
+          f"{sum(len(v) for v in fam_seqs.values())} sequences\n")
 
     # ── cache CNN embeddings ──────────────────────────────────────────────────
     print("[1/3] Caching CNN embeddings...", flush=True)

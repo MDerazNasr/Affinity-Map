@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data.configs.protonet import CONF
 from models.encoder import ProteinEncoderCNN
 from utils.episodes import loaded_encoded_families, EpisodeSampler
+from utils.splits import get_splits
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -218,13 +219,14 @@ def main():
         raise FileNotFoundError(f"Checkpoint not found: {checkpoint}")
 
     print(f"Loading model from {checkpoint} on {conf['device']}...")
-    fams = loaded_encoded_families(conf["encoded_dir"])
+    all_fams = loaded_encoded_families(conf["encoded_dir"])
+    _, _, test_fams = get_splits(all_fams)
     model = load_model(checkpoint, conf)
-    print(f"Loaded {len(fams)} families.")
+    print(f"Loaded {len(all_fams)} families → using {len(test_fams)} test families.")
 
-    experiment_episode_distribution(model, fams, conf, n_episodes=500)
-    experiment_kshot_sweep(model, fams, conf, k_values=[1, 2, 5, 10, 20], n_episodes=300)
-    experiment_named_confusion(model, fams, conf, n_episodes=300)
+    experiment_episode_distribution(model, test_fams, conf, n_episodes=500)
+    experiment_kshot_sweep(model, test_fams, conf, k_values=[1, 2, 5, 10, 20], n_episodes=300)
+    experiment_named_confusion(model, test_fams, conf, n_episodes=300)
 
     print("\nAll experiments complete.")
 

@@ -8,6 +8,7 @@ from data.configs.protonet import CONF
 from models.encoder import ProteinEncoderCNN
 from models.protonet import compute_prototypes, prototypical_logits
 from utils.episodes import loaded_encoded_families, EpisodeSampler
+from utils.splits import get_splits
 
 # ...
 fams = loaded_encoded_families(CONF["encoded_dir"])
@@ -59,19 +60,12 @@ def main():
 
     model = ProteinEncoderCNN(proj_dim=cfg["proj_dim"]).to(device)
 
-    names = sorted(list(fams.keys()))
-    if len(names) < cfg["N"] + 1:
-        raise ValueError(f"Not enough families to train/val. Found {len(names)}. ")
-    
-    split = int(0.8 * len(names)) 
-    #The first 80% of families → used for training episodes
-	#The remaining 20% → used for validation episodes
-    train_fams, val_fams = {}, {}
-    for k in names[:split]: #my_list[start:end]
-        train_fams[k] = fams[k]
-    for k in names[split:]:
-        val_fams[k] = fams[k]
-    print(f"Train families: {len(train_fams)} | Val families: {len(val_fams)}")
+    if len(fams) < cfg["N"] + 1:
+        raise ValueError(f"Not enough families to split. Found {len(fams)}.")
+
+    # 70/15/15 deterministic split (alphabetical sort)
+    train_fams, val_fams, test_fams = get_splits(fams)
+    print(f"Train: {len(train_fams)} | Val: {len(val_fams)} | Test: {len(test_fams)} families")
 
     #Make sure each side has enough sequences for K+Q sampling
     train_sampler = EpisodeSampler(train_fams, N=cfg["N"], K=cfg["K"], Q=cfg["Q"], device=device)

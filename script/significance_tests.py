@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 from models.encoder import ProteinEncoderCNN
 from data.configs.protonet import CONF
+from utils.splits import get_splits
 
 PROTEINS_JSON = "data/processed/proteins.json"
 CHECKPOINT    = "checkpoints/best_protonet.pt"
@@ -141,14 +142,16 @@ def main():
         raw = json.load(f)
 
     # Clean sequences
-    fam_seqs = {}
+    all_fam_seqs = {}
     for fam, seqs in raw.items():
         clean = [s for s in seqs if isinstance(s, str) and
                  all(aa in AA_SET for aa in s) and 10 <= len(s) <= 3000]
         if clean:
-            fam_seqs[fam] = clean
+            all_fam_seqs[fam] = clean
 
-    print(f"  {len(fam_seqs)} families loaded\n")
+    # Use test families only
+    _, _, fam_seqs = get_splits(all_fam_seqs)
+    print(f"  {len(all_fam_seqs)} total families → using {len(fam_seqs)} test families\n")
 
     results = {}
 

@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data.configs.protonet import CONF
 from utils.episodes import loaded_encoded_families
+from utils.splits import get_splits
 
 # ── k-mer feature extraction ──────────────────────────────────────────────────
 
@@ -159,13 +160,14 @@ def main():
 
     print("Loading raw sequences...")
     raw = load_raw_sequences(proteins_path)
-    # Keep only families with unique amino-acid sequences (filter empties)
-    fam_seqs = {
+    all_fam_seqs = {
         fname: [s for s in seqs if len(s) >= 10 and all(aa in AA_SET for aa in s)]
         for fname, seqs in raw.items()
         if isinstance(seqs, list) and len(seqs) > 0
     }
-    print(f"Loaded {len(fam_seqs)} families with cleaned sequences.")
+    # Use test families only
+    _, _, fam_seqs = get_splits(all_fam_seqs)
+    print(f"Loaded {len(all_fam_seqs)} total families → using {len(fam_seqs)} test families.")
 
     k_values = [1, 2, 5, 10, 20]
     n_episodes = 300
