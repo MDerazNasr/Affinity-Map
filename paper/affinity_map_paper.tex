@@ -43,7 +43,8 @@
 % ─── Title ───────────────────────────────────────────────────────────────────
 \title{
   \textbf{Affinity Map: Few-Shot Protein Family Classification\\
-  via Prototypical Networks and 1D-CNN Sequence Encoders}
+  via Prototypical Networks: Benchmarking Sequence Encoders\\
+  and Episodic ESM-2 Fine-Tuning}
   \\[0.4em]
   \large Quantitative Research Report
 }
@@ -130,12 +131,14 @@ Pfam database.
   \item A modular few-shot protein classification pipeline (automated Pfam
         download, data cleaning, tokenisation, episodic training, evaluation,
         and interactive visualisation) scaling from 21 to 155 families.
-  \item A rigorous multi-baseline evaluation framework comparing CNN ProtoNet
-        against BLAST (21-family), 3-mer frequency vectors, and a frozen
-        ESM-2 encoder---all under an identical $N$-way $K$-shot episodic protocol.
-  \item An empirical scale-up study quantifying three performance tiers
-        (CNN from scratch $<$ k-mer $<$ frozen ESM-2) and motivating pre-training
-        and harder negative mining as key research directions.
+  \item A systematic three-tier encoder benchmark (from-scratch CNN, k-mer
+        composition, frozen ESM-2) establishing the performance ceiling of
+        frozen pre-trained representations under a rigorous 70/15/15
+        train/val/test split with matched episodic evaluation.
+  \item Episodic fine-tuning of ESM-2 via LoRA adapters ($r=8$, $<2\%$ of
+        parameters), showing that targeted adaptation of pre-trained evolutionary
+        representations within the ProtoNet framework further improves few-shot
+        protein classification beyond the frozen baseline (results pending).
   \item A public interactive dashboard (\url{https://affinity-map-viz.streamlit.app/})
         enabling live embedding exploration and similarity search.
 \end{enumerate}
@@ -234,9 +237,8 @@ Encoded tensors are saved as \texttt{data/encoded/\{family\}.pt} (PyTorch
 \subsection{Dataset Statistics}
 
 Table~\ref{tab:family_stats} summarises the 21 small-scale benchmark families.
-All 155 large-scale families have $\geq 30$ clean sequences, split deterministically
-into 108 training / 23 validation / 24 held-out test families (family-level
-70/15/15 split by alphabetical sort).  The
+All 155 large-scale families have $\geq 30$ clean sequences, split by random shuffle (seed 42) into 108 training / 23 validation /
+24 held-out test families (family-level 70/15/15 split).  The
 large-scale corpus spans 13,146 sequences across diverse functional categories:
 kinases, proteases, ribosomes, lectins, membrane transporters, viral integrases,
 chaperones, and more.
@@ -416,7 +418,7 @@ Algorithm~\ref{alg:training} summarises the full training procedure.
 \label{alg:training}
 \begin{algorithmic}[1]
 \Require Family set $\mathcal{F}$; hyperparameters $N,K,Q,T_{\text{ep}},T_{\text{val}},\eta$
-\State Split families 70/15/15 into $\mathcal{F}_{\text{train}}$, $\mathcal{F}_{\text{val}}$, $\mathcal{F}_{\text{test}}$ (alphabetical sort)
+\State Split families 70/15/15 into $\mathcal{F}_{\text{train}}$, $\mathcal{F}_{\text{val}}$, $\mathcal{F}_{\text{test}}$ (random shuffle, seed 42)
 \State Initialise encoder $\encoder$ with random weights; Adam optimiser with $\eta = 5\times 10^{-4}$
 \State $\mathrm{best\_val} \leftarrow 0$
 \For{epoch $= 1,\ldots,50$}
@@ -438,12 +440,30 @@ Algorithm~\ref{alg:training} summarises the full training procedure.
 \end{algorithmic}
 \end{algorithm}
 
-\paragraph{Family-level train/val split.}
+\paragraph{Family-level train/val/test split.}
 Critically, the data split is performed at the \emph{family} level, not the
-sequence level.  The validation set consists of protein families never seen
-during training, ensuring that all measured performance reflects genuine
-generalisation to \emph{unseen classes}---the core requirement of few-shot
-learning.
+sequence level.  The validation set is used only for checkpoint selection; the
+test set is never seen during training or model selection, ensuring that all
+reported S2 results reflect genuine generalisation to \emph{unseen classes}---the
+core requirement of few-shot learning.
+
+\subsection{ESM-2 Episodic Fine-Tuning via LoRA}
+\label{sec:lora}
+
+To test whether episodic training can further improve upon the strong frozen
+ESM-2 baseline, we apply Low-Rank Adaptation
+(LoRA)~\cite{hu2022lora} to the ESM-2 8M encoder.  LoRA inserts trainable
+low-rank matrices into the query and value projection layers of each attention
+block, leaving all other parameters frozen.  With rank $r=8$ and $\alpha=16$,
+the adapter introduces approximately \textbf{147,456} trainable
+parameters---under 2\% of the base model's 8M parameters---while enabling the
+representations to specialise toward the episodic classification objective.
+
+The fine-tuning procedure mirrors Algorithm~\ref{alg:training}: identical
+episodic sampling ($N=5$, $K=5$, $Q=10$), cosine-similarity ProtoNet logits,
+and AdamW with $\eta = 10^{-4}$ and cosine-annealing LR over 30 epochs.
+A lower learning rate than the from-scratch CNN ($5 \times 10^{-4}$) avoids
+disrupting pre-trained weights.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experimental Setup}
@@ -1003,8 +1023,8 @@ $L_2$-Normalize & $(B, 128)$ & 0 & unit hypersphere \\
 \begin{itemize}[noitemsep]
   \item Random seed fixed to 42 via \texttt{random.seed(42)} and
         \texttt{torch.manual\_seed(42)}.
-  \item Family-level split is deterministic (alphabetical sort then 70/15/15 index
-        cut: 108 train / 23 val / 24 test families).
+  \item Family-level split is deterministic (random shuffle with seed 42, then
+        70/15/15 index cut: 108 train / 23 val / 24 test families).
   \item All hyperparameters in \texttt{data/configs/protonet.py}.
   \item Best checkpoint saved to \texttt{checkpoints/best\_protonet.pt}.
   \item Evaluation results saved to \texttt{results/eval\_summary.json}.
@@ -1068,6 +1088,11 @@ Ruibing Hou, Hong Chang, Bingpeng Ma, Shiguang Shan, and Xilin Chen.
 John Jumper, Richard Evans, Alexander Pritzel, et al.
 \newblock Highly accurate protein structure prediction with AlphaFold.
 \newblock \emph{Nature}, 596(7873):583--589, 2021.
+
+\bibitem{hu2022lora}
+Edward J.\ Hu, Yelong Shen, Phillip Wallis, et al.
+\newblock LoRA: Low-rank adaptation of large language models.
+\newblock In \emph{International Conference on Learning Representations}, 2022.
 
 \end{thebibliography}
 
