@@ -47,9 +47,9 @@ CURVE_PATH = "results/esm2_lora_curves.csv"
 N        = 5          # ways
 K_TRAIN  = 5          # shots during training
 Q        = 10         # queries per class
-EPOCHS   = 30
-EP_TRAIN = 200        # episodes per epoch
-EP_VAL   = 100        # val episodes per epoch
+EPOCHS   = 20
+EP_TRAIN = 10         # episodes per epoch (reduced for MPS speed)
+EP_VAL   = 5          # val episodes per epoch
 LR       = 1e-4       # lower LR than CNN (pre-trained weights)
 GRAD_CLIP = 1.0
 SEED     = 42
@@ -62,18 +62,16 @@ LORA_TARGETS = ["query", "value"]
 
 # Evaluation
 K_SWEEP  = [1, 2, 5, 10, 20]
-EVAL_EP  = 1000        # matched episodes
+EVAL_EP  = 50          # matched episodes
 
-ESM_MAX_LEN = 512
-BATCH_SIZE  = 16       # sequences per forward pass
+ESM_MAX_LEN = 256      # covers >85% of sequences (mean=235 AA); cuts attention mem 4x
+BATCH_SIZE  = 4        # smaller batch = lower peak MPS memory
 AA_SET = set("ACDEFGHIKLMNPQRSTVWY")
 CKPT_EVERY = 5         # save intermediate checkpoint every N epochs
 
-device = (
-    torch.device("mps")  if torch.backends.mps.is_available() else
-    torch.device("cuda") if torch.cuda.is_available()          else
-    torch.device("cpu")
-)
+# Force CPU: MPS unified-memory model causes OS kills during backprop through
+# 6 attention layers; CPU uses swappable RAM and is stable for this model size.
+device = torch.device("cpu")
 
 random.seed(SEED)
 np.random.seed(SEED)
@@ -181,6 +179,8 @@ def build_lora_model():
         bias="none",
     )
     model = get_peft_model(base, lora_cfg)
+    model.enable_input_require_grads()          # required for grad checkpointing with PEFT
+    model.gradient_checkpointing_enable()       # recompute activations; ~2x compute, much less peak RAM
     model.print_trainable_parameters()
     return model.to(device), tokenizer
 
@@ -262,12 +262,12 @@ def train(model, tokenizer, train_fams, val_fams):
             writer.writerow([epoch, round(tl, 6), round(ta, 6), round(va, 6)])
             cf.flush()
 
-            print(f"Epoch {epoch:3d}/{EPOCHS}  loss={tl:.4f}  train={ta:.3f}  val={va:.3f}")
+            print(f"Epoch {epoch:3d}/{EPOCHS}  loss={tl:.4f}  train={ta:.3f}  val={va:.3f}", flush=True)
 
             if va > best_val:
                 best_val = va
                 model.save_pretrained(CKPT_DIR)
-                print(f"  --> saved best (val={best_val:.3f})")
+                print(f"  --> saved best (val={best_val:.3f})", flush=True)
 
             # Intermediate checkpoint safeguard
             if epoch % CKPT_EVERY == 0:

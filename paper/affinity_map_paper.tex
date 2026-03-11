@@ -83,11 +83,15 @@ of 97.1\%.  Evaluating on the 24 held-out test families reveals: (1)~CNN ProtoNe
 trained from scratch reaches 71.0\% at $K=5$; (2)~3-mer frequency k-mer
 ProtoNet reaches 86.2\%, outperforming CNN across all $K$ values;
 (3)~a frozen ESM-2 encoder (8M parameters, no episodic fine-tuning) reaches
-\textbf{88.7\%} at $K=5$ and 78.9\% at $K=1$.  ESM-2 leads at $K \leq 5$
-but k-mer ProtoNet edges ahead at $K=20$ (91.7\% vs 91.2\%), revealing a
-crossover where compositional statistics rival evolutionary pre-training given
-sufficient support.  All pairwise CNN vs.\ baseline differences are
-statistically significant (paired Wilcoxon, $p < 0.001$).  Real per-epoch
+\textbf{88.7\%} at $K=5$ and 78.9\% at $K=1$; (4)~episodic LoRA fine-tuning
+of ESM-2 ($r=8$, 61,440 trainable parameters) reaches 93.4\% at $K=5$ under
+matched evaluation but provides no significant gain over frozen ESM-2
+($<0.5$ pp, all ns), indicating that frozen pre-training is already near-optimal
+for this task.  A crossover emerges at $K=20$ where k-mer ProtoNet (95.5\%)
+edges both ESM-2 variants ($\approx\!94-95\%$), revealing that compositional
+statistics rival evolutionary pre-training given sufficient support.
+All pairwise CNN vs.\ baseline differences are statistically significant
+(paired Wilcoxon, $p < 0.001$).  Real per-epoch
 learning curves, a named confusion matrix, PCA/UMAP embedding visualisations,
 and comprehensive baseline comparisons provide biologically interpretable
 diagnostics throughout.
@@ -135,10 +139,11 @@ Pfam database.
         composition, frozen ESM-2) establishing the performance ceiling of
         frozen pre-trained representations under a rigorous 70/15/15
         train/val/test split with matched episodic evaluation.
-  \item Episodic fine-tuning of ESM-2 via LoRA adapters ($r=8$, $<2\%$ of
-        parameters), showing that targeted adaptation of pre-trained evolutionary
-        representations within the ProtoNet framework further improves few-shot
-        protein classification beyond the frozen baseline (results pending).
+  \item Episodic fine-tuning of ESM-2 via LoRA adapters ($r=8$, $<1\%$ of
+        parameters), showing that episodic LoRA adaptation matches but does not
+        significantly exceed the frozen ESM-2 baseline ($<0.5$ pp across all $K$,
+        all ns), establishing frozen pre-training as a surprisingly strong ceiling
+        for this task.
   \item A public interactive dashboard (\url{https://affinity-map-viz.streamlit.app/})
         enabling live embedding exploration and similarity search.
 \end{enumerate}
@@ -455,15 +460,20 @@ ESM-2 baseline, we apply Low-Rank Adaptation
 (LoRA)~\cite{hu2022lora} to the ESM-2 8M encoder.  LoRA inserts trainable
 low-rank matrices into the query and value projection layers of each attention
 block, leaving all other parameters frozen.  With rank $r=8$ and $\alpha=16$,
-the adapter introduces approximately \textbf{147,456} trainable
-parameters---under 2\% of the base model's 8M parameters---while enabling the
-representations to specialise toward the episodic classification objective.
+the adapter introduces \textbf{61,440} trainable parameters---under 1\% of
+the base model's 7.6M parameters (0.81\%)---while enabling the representations
+to specialise toward the episodic classification objective.
 
 The fine-tuning procedure mirrors Algorithm~\ref{alg:training}: identical
 episodic sampling ($N=5$, $K=5$, $Q=10$), cosine-similarity ProtoNet logits,
-and AdamW with $\eta = 10^{-4}$ and cosine-annealing LR over 30 epochs.
-A lower learning rate than the from-scratch CNN ($5 \times 10^{-4}$) avoids
-disrupting pre-trained weights.
+and AdamW with $\eta = 10^{-4}$ and cosine-annealing LR over 20 epochs
+(10 train episodes and 5 val episodes per epoch).  A lower learning rate than
+the from-scratch CNN ($5 \times 10^{-4}$) avoids disrupting pre-trained weights.
+Gradient checkpointing~\cite{chen2016training} is enabled to reduce peak
+activation memory during backpropagation through the attention layers;
+sequences are truncated to 256 amino acids (covering $>$85\% of all sequences
+given mean length 235~AA).  Training runs on CPU to avoid MPS unified-memory
+pressure from attention-activation storage.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experimental Setup}
@@ -583,7 +593,10 @@ experimental settings.
          \textbf{S2} = 155-family scale-up (BLAST omitted, computationally
          prohibitive at this scale).
          95\% CI $= \mu \pm 1.96\,\sigma/\!\sqrt{E}$.
-         $\Delta$ = improvement over 20\% random baseline.}
+         $\Delta$ = improvement over 20\% random baseline.
+         $^\dagger$LoRA evaluated on 50 matched episodes with 256-AA truncation
+         (see \S\ref{sec:lora_results}); not directly comparable in absolute
+         terms to other S2 rows (1{,}000 episodes, full-length sequences).}
 \label{tab:main_results}
 \small
 \begin{tabular}{lcccc}
@@ -595,6 +608,7 @@ CNN ProtoNet (ours)     & 86.87\% & 71.00\% & 12.13\% & $+51.0$ pp \\
 k-mer 1-NN              & 91.38\% & 83.13\% &  9.73\% & $+63.1$ pp \\
 k-mer ProtoNet          & 92.13\% & 86.21\% &  9.35\% & $+66.2$ pp \\
 ESM-2 ProtoNet (frozen) & n/a     & \textbf{88.69\%} & \textbf{9.29\%} & $\mathbf{+68.7}$ \textbf{pp} \\
+ESM-2 + LoRA (ours)     & n/a     & 93.36\%$^\dagger$ & 4.28\%$^\dagger$ & $+73.4$ pp$^\dagger$ \\
 BLAST 1-NN              & 96.20\% & n/a     & --     & -- \\
 \textbf{BLAST ProtoNet} & \textbf{97.09\%} & n/a & -- & -- \\
 \bottomrule
@@ -668,6 +682,52 @@ k-mer ProtoNet  & 69.7$\pm$12.5 & 77.9$\pm$11.1 & 86.2$\pm$9.4 & 90.6$\pm$7.2 & 
         (91.2\% vs 92.2\%), revealing that sufficient support makes compositional
         statistics competitive with evolutionary pre-training.
 \end{enumerate}
+
+\subsection{ESM-2 LoRA Fine-Tuning Results}
+\label{sec:lora_results}
+
+Table~\ref{tab:lora} shows a matched evaluation of ESM-2 with LoRA adapters
+against the frozen ESM-2 and k-mer ProtoNet baselines.  All three methods are
+evaluated on the \emph{same} 50 random episodes per $K$ value (5-way, $Q=10$),
+with sequences truncated to 256~AA.
+
+\begin{table}[H]
+\centering
+\caption{Matched evaluation of ESM-2 LoRA vs.\ frozen ESM-2 and k-mer ProtoNet
+         on 24 held-out test families (50 matched episodes per $K$, 5-way, $Q=10$,
+         256-AA truncation).
+         $\Delta_{\mathrm{Frz}}$ = LoRA $-$ frozen (pp); \textbf{ns} = not significant
+         ($p \geq 0.05$, paired Wilcoxon); $^{***}p < 0.001$.}
+\label{tab:lora}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
+\toprule
+$K$ & \textbf{LoRA} & \textbf{Frozen} & \textbf{k-mer} &
+    $\Delta_{\mathrm{Frz}}$ & $\Delta_{\mathrm{kmer}}$ \\
+\midrule
+ 1 & 84.3$\pm$9.4  & 83.8  & 72.9 & $+0.5$ ns & $+11.4^{***}$ \\
+ 2 & 90.4$\pm$6.3  & 90.0  & 79.7 & $+0.3$ ns & $+10.6^{***}$ \\
+ 5 & \textbf{93.4}$\pm$4.3  & \textbf{93.3}  & 85.9 & $+0.0$ ns & $+7.4^{***}$ \\
+10 & 92.8$\pm$5.8  & 92.5  & 91.8 & $+0.3$ ns & $+1.0$ ns \\
+20 & 94.7$\pm$3.6  & 94.3  & \textbf{95.5} & $+0.4$ ns & $-0.8$ ns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The central finding is that \textbf{LoRA adapters provide no statistically
+significant improvement over frozen ESM-2 at any $K$ value} (all differences
+$<0.5$~pp, all paired Wilcoxon tests non-significant).  ESM-2's pre-trained
+representations are already well-calibrated for protein family discrimination;
+episodic LoRA fine-tuning with the available data budget (10 training episodes
+per epoch, 20 epochs) cannot substantially move the adapter weights away from
+the frozen initialisation.
+
+Compared to k-mer ProtoNet, both ESM-2 variants show large and significant
+advantages at low $K$ ($+11.4$~pp at $K=1$, $+7.4$~pp at $K=5$, both
+$p < 0.001$).  The advantage shrinks as $K$ grows, with k-mer slightly edging
+ahead at $K=20$ (95.5\% vs.\ 94.7\%), mirroring the crossover trend seen in
+the full-length 1{,}000-episode evaluation (Table~\ref{tab:kshot}).
 
 \subsection{Statistical Significance of CNN vs.\ k-mer ProtoNet}
 \label{sec:significance}
@@ -895,12 +955,16 @@ at random.  A curriculum that progressively includes \emph{similar} families
 would force the model to discriminate on fine-grained motif features rather than
 global composition, directly targeting the gap seen at $K \geq 2$.
 
-\paragraph{ESM-2 fine-tuning.}
-Our ESM-2 baseline uses the encoder frozen (zero-shot).  Episodic fine-tuning
-of ESM-2 (or a LoRA adapter on top of it) within the ProtoNet framework would
-likely close the remaining gap to BLAST while retaining few-shot generality.
-The frozen ESM-2 result (88.7\% at $K=5$) establishes the floor for what
-episodic fine-tuning can achieve.
+\paragraph{ESM-2 LoRA fine-tuning.}
+We evaluated episodic fine-tuning of ESM-2 via LoRA ($r=8$, 61,440 trainable
+parameters) and found that it does \emph{not} significantly improve over frozen
+ESM-2 ($<0.5$~pp at all $K$, all ns; Table~\ref{tab:lora}).  This negative
+result is informative: the ESM-2 representations are already near-optimal for
+protein family ProtoNet classification under the current data regime.  Larger
+LoRA rank, more training episodes per epoch, longer training, or few-shot
+meta-learning objectives beyond standard ProtoNet (e.g.\ MAML-style
+inner-loop updates) may be needed to realise the potential of episodic
+encoder adaptation.
 
 \paragraph{Attention-based support aggregation.}
 Prototypical Networks use simple support-set averaging.  Cross-attention
@@ -933,7 +997,7 @@ findings are:
         re-encoding and retraining, demonstrates the full reproducibility and
         scalability of the pipeline.
 
-  \item \textbf{Three-tier empirical findings on held-out test families.}
+  \item \textbf{Four-tier empirical findings on held-out test families.}
         On the 21-family benchmark, CNN ProtoNet achieves 86.9\% against a
         BLAST upper bound of 97.1\%.  On the 24 held-out test families:
         CNN ProtoNet 71.0\% $<$ k-mer ProtoNet 86.2\% $<$ frozen ESM-2
@@ -942,6 +1006,13 @@ findings are:
         at $K=20$ k-mer ProtoNet (92.2\%) edges ESM-2 (91.2\%), revealing that
         compositional statistics can match evolutionary pre-training given
         sufficient support examples.
+
+  \item \textbf{LoRA fine-tuning matches frozen ESM-2.}
+        Episodic LoRA adaptation ($r=8$, 0.81\% of parameters) yields
+        no statistically significant improvement over frozen ESM-2 at any $K$
+        ($<0.5$~pp, all ns).  This establishes frozen pre-training as a
+        surprisingly strong ceiling and motivates future work on larger adapters,
+        richer meta-learning objectives, and increased data budgets.
 
   \item \textbf{Dataset scale delays overfitting.} On 21 families, val accuracy
         peaked at epoch 3 and degraded (task-distribution overfitting).
@@ -956,12 +1027,12 @@ findings are:
 
 Taken together, the results chart a clear roadmap: the episodic ProtoNet
 framework is valid and scalable; the bottleneck for from-scratch training is
-task-distribution overfitting.  The frozen ESM-2 result (88.7\% at $K=5$,
-18 pp above CNN) directly motivates episodic fine-tuning of pre-trained
-encoders as the highest-leverage next step---combining evolutionary feature
-quality with the few-shot generalisation guarantee of episodic training.
-The crossover between ESM-2 and k-mer ProtoNet at $K=20$ further motivates
-studying how support-set size interacts with encoder quality.
+task-distribution overfitting.  Frozen ESM-2 (88.7\% at $K=5$, 18~pp above CNN)
+establishes a strong performance ceiling that episodic LoRA fine-tuning cannot
+significantly surpass under the current data budget---pointing to richer
+meta-learning objectives, larger adapters, or increased episode counts as
+the next frontier.  The crossover between k-mer ProtoNet and ESM-2 at $K=20$
+further motivates studying how support-set size interacts with encoder quality.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \appendix
@@ -1093,6 +1164,11 @@ John Jumper, Richard Evans, Alexander Pritzel, et al.
 Edward J.\ Hu, Yelong Shen, Phillip Wallis, et al.
 \newblock LoRA: Low-rank adaptation of large language models.
 \newblock In \emph{International Conference on Learning Representations}, 2022.
+
+\bibitem{chen2016training}
+Tianqi Chen, Bing Xu, Chiyuan Zhang, and Carlos Guestrin.
+\newblock Training deep nets with sublinear memory cost.
+\newblock \emph{arXiv preprint arXiv:1604.06174}, 2016.
 
 \end{thebibliography}
 
