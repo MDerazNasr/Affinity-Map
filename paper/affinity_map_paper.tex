@@ -45,15 +45,11 @@
   \textbf{Affinity Map: Few-Shot Protein Family Classification\\
   via Prototypical Networks: Benchmarking Sequence Encoders\\
   and Episodic ESM-2 Fine-Tuning}
-  \\[0.4em]
-  \large Quantitative Research Report
 }
 \author{
   Mohammed El-Raznasr\\
-  \textit{Protein Few-Shot Learning Project}\\
-  \href{https://affinity-map-viz.streamlit.app/}{\texttt{affinity-map-viz.streamlit.app}}
+  \textit{Georgia Institute of Technology}
 }
-% Note: this paper was authored solely by Mohammed El-Raznasr.
 \date{March 2026}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -68,14 +64,17 @@ acquisition of large, curated per-family corpora is laborious and often
 infeasible for rare families.  We present \textbf{Affinity Map}, a meta-learning
 pipeline that frames protein family classification as a \emph{few-shot learning}
 problem: given only $K$ labelled examples from a previously unseen family, the
-model must correctly assign new sequences to that family.  Our approach couples
-a lightweight \textbf{1D-Convolutional Neural Network} (1D-CNN) sequence encoder
-with \textbf{Prototypical Networks}~\cite{snell2017prototypical}, training
-entirely through episodic $N$-way $K$-shot tasks sampled from the Pfam database.
+model must correctly assign new sequences to that family.  We systematically
+benchmark encoder quality under this episodic framework, ranging from a
+lightweight \textbf{1D-CNN} trained from scratch through compositional k-mer
+baselines to a frozen \textbf{ESM-2} protein language model and episodic
+\textbf{LoRA fine-tuning}, all evaluated under
+\textbf{Prototypical Networks}~\cite{snell2017prototypical} with $N$-way
+$K$-shot tasks sampled from the Pfam database.
 We conduct two complementary experiments: a \emph{small-scale} 21-family
 benchmark with full BLAST/k-mer baselines, and a \emph{large-scale} 155-family
 scale-up (13,146 sequences) with a 70/15/15 train/val/test split
-(108 training / 23 validation / 24 held-out test families)
+(105 training / 22 validation / 24 held-out test families)
 to assess how the framework behaves on a genuinely diverse and harder task
 distribution.  On the 21-family benchmark, the CNN ProtoNet achieves
 \textbf{86.9\%} 5-way 5-shot accuracy against a strong BLAST upper bound
@@ -84,18 +83,17 @@ trained from scratch reaches 71.0\% at $K=5$; (2)~3-mer frequency k-mer
 ProtoNet reaches 86.2\%, outperforming CNN across all $K$ values;
 (3)~a frozen ESM-2 encoder (8M parameters, no episodic fine-tuning) reaches
 \textbf{88.7\%} at $K=5$ and 78.9\% at $K=1$; (4)~episodic LoRA fine-tuning
-of ESM-2 ($r=8$, 61,440 trainable parameters) reaches 93.4\% at $K=5$ under
-matched evaluation but provides no significant gain over frozen ESM-2
-($<0.5$ pp, all ns), indicating that frozen pre-training is already near-optimal
-for this task.  A crossover emerges at $K=20$ where k-mer ProtoNet (95.5\%)
-edges both ESM-2 variants ($\approx\!94-95\%$), revealing that compositional
-statistics rival evolutionary pre-training given sufficient support.
+of ESM-2 ($r=8$, 61,440 trainable parameters, 30 epochs, 200 episodes/epoch on
+GPU) reveals a $K$-dependent interaction: LoRA gains $+2.5$~pp over frozen
+ESM-2 at $K=1$ ($p < 0.001$), but underperforms frozen ESM-2 by 0.6--2.3~pp at
+$K \geq 2$ (all $p \leq 0.05$), indicating that episodic adaptation improves
+single-shot retrieval at the cost of multi-shot prototype quality.
 All pairwise CNN vs.\ baseline differences are statistically significant
 (paired Wilcoxon, $p < 0.001$).  Real per-epoch
 learning curves, a named confusion matrix, PCA/UMAP embedding visualisations,
 and comprehensive baseline comparisons provide biologically interpretable
 diagnostics throughout.
-All code, results, and an interactive embedding dashboard are publicly available.
+All code and results are publicly available.
 \end{abstract}
 
 \tableofcontents
@@ -140,12 +138,11 @@ Pfam database.
         frozen pre-trained representations under a rigorous 70/15/15
         train/val/test split with matched episodic evaluation.
   \item Episodic fine-tuning of ESM-2 via LoRA adapters ($r=8$, $<1\%$ of
-        parameters), showing that episodic LoRA adaptation matches but does not
-        significantly exceed the frozen ESM-2 baseline ($<0.5$ pp across all $K$,
-        all ns), establishing frozen pre-training as a surprisingly strong ceiling
-        for this task.
-  \item A public interactive dashboard (\url{https://affinity-map-viz.streamlit.app/})
-        enabling live embedding exploration and similarity search.
+        parameters, 30 epochs on GPU), revealing a $K$-dependent interaction:
+        LoRA gains $+2.5$~pp over frozen ESM-2 at $K=1$ ($p < 0.001$) but
+        underperforms frozen by 0.6--2.3~pp at $K \geq 2$ (all $p \leq 0.05$),
+        showing that episodic adaptation improves single-shot retrieval at the
+        cost of multi-shot prototype quality.
 \end{enumerate}
 
 % ─────────────────────────────────────────────────────────────────────────────
@@ -180,14 +177,15 @@ dataset and to keep the system accessible and interpretable.
 
 \subsection{Few-Shot Protein Classification}
 
-Prior work has explored few-shot classification with protein sequences:
-Guo et al.~\cite{guo2020broader} study cross-domain few-shot learning;
-meta-learning for biological sequences has been explored in the context of RNA
-family classification and activity prediction.  To the best of our knowledge,
-this work is among the first to systematically evaluate episodic meta-learning
-with Prototypical Networks on raw amino-acid sequences drawn directly from Pfam,
-comparing trained-from-scratch CNN encoders against compositional baselines and
-a frozen pre-trained ESM-2 encoder under a unified episodic evaluation protocol.
+Prior work has explored few-shot learning with biological sequences.
+Guo et al.~\cite{guo2020broader} study cross-domain few-shot learning across
+diverse domains including biological data.  Rao et al.~\cite{rao2019tape}
+benchmark protein sequence models on a range of downstream tasks, including
+low-data settings, establishing transfer learning baselines for the field.
+We are not aware of prior work that systematically benchmarks episodic
+Prototypical Network methods across CNN, k-mer, and protein language model
+encoders on Pfam under a unified episodic evaluation protocol with held-out
+test families; this work provides that reference point.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Dataset and Preprocessing}
@@ -242,7 +240,7 @@ Encoded tensors are saved as \texttt{data/encoded/\{family\}.pt} (PyTorch
 \subsection{Dataset Statistics}
 
 Table~\ref{tab:family_stats} summarises the 21 small-scale benchmark families.
-All 155 large-scale families have $\geq 30$ clean sequences, split by random shuffle (seed 42) into 108 training / 23 validation /
+All 155 large-scale families have $\geq 30$ clean sequences, split by random shuffle (seed 42) into 105 training / 22 validation /
 24 held-out test families (family-level 70/15/15 split).  The
 large-scale corpus spans 13,146 sequences across diverse functional categories:
 kinases, proteases, ribosomes, lectins, membrane transporters, viral integrases,
@@ -466,14 +464,15 @@ to specialise toward the episodic classification objective.
 
 The fine-tuning procedure mirrors Algorithm~\ref{alg:training}: identical
 episodic sampling ($N=5$, $K=5$, $Q=10$), cosine-similarity ProtoNet logits,
-and AdamW with $\eta = 10^{-4}$ and cosine-annealing LR over 20 epochs
-(10 train episodes and 5 val episodes per epoch).  A lower learning rate than
-the from-scratch CNN ($5 \times 10^{-4}$) avoids disrupting pre-trained weights.
-Gradient checkpointing~\cite{chen2016training} is enabled to reduce peak
-activation memory during backpropagation through the attention layers;
-sequences are truncated to 256 amino acids (covering $>$85\% of all sequences
-given mean length 235~AA).  Training runs on CPU to avoid MPS unified-memory
-pressure from attention-activation storage.
+and AdamW with $\eta = 10^{-4}$ and cosine-annealing LR over 30 epochs
+(200 train episodes and 100 val episodes per epoch, 6,000 training episodes
+total).  A lower learning rate than the from-scratch CNN ($5 \times 10^{-4}$)
+avoids disrupting pre-trained weights.  Gradient
+checkpointing~\cite{chen2016training} is enabled to reduce peak activation
+memory during backpropagation through the six attention layers; sequences are
+truncated to 512 amino acids (covering $>$99\% of all sequences given mean
+length 235~AA).  Training runs on a T4 GPU (Google Colab) to exploit CUDA
+parallelism; best validation accuracy 96.3\% was reached at epoch~8.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Experimental Setup}
@@ -560,7 +559,7 @@ Figure~\ref{fig:curves} shows training loss and accuracy across all 50 epochs
   \centering
   \includegraphics[width=\textwidth]{../results/fig_learning_curves.png}
   \caption{Training loss (right) and episode-level accuracy (left) per epoch
-           on the 155-family dataset (108 training / 23 validation / 24 test families),
+           on the 155-family dataset (105 training / 22 validation / 24 test families),
            trained for 50 epochs with cosine-annealing LR ($T_{\max}=50$).
            Training accuracy rises from 57.7\% (epoch 1) to 91.3\% (epoch 50).
            Validation accuracy peaks at \textbf{68.6\%} at epoch 16, then
@@ -574,7 +573,7 @@ Training on the 155-family corpus with 50 epochs and cosine-annealing LR
 reveals a nuanced picture of generalisation.  In the 21-family setting, the
 model suffered \emph{task-distribution overfitting} as early as epoch 3:
 16 training families form a tiny episode distribution, and the encoder quickly
-memorised their compositional quirks.  With 108 training families and a
+memorised their compositional quirks.  With 105 training families and a
 held-out test set of 24 families, the episode space is diverse enough to
 delay this effect: validation accuracy peaks at 68.6\% at epoch 16 before
 gradually declining as training accuracy continues climbing to 91.3\%.
@@ -588,15 +587,14 @@ experimental settings.
 
 \begin{table}[H]
 \centering
-\caption{5-way 5-shot classification accuracy ($K=5$, 300--500 episodes).
+\caption{5-way 5-shot classification accuracy ($K=5$, 1{,}000 episodes).
          \textbf{S1} = 21-family benchmark (BLAST included);
          \textbf{S2} = 155-family scale-up (BLAST omitted, computationally
-         prohibitive at this scale).
+         prohibitive at this scale), full-length sequences.
          95\% CI $= \mu \pm 1.96\,\sigma/\!\sqrt{E}$.
          $\Delta$ = improvement over 20\% random baseline.
-         $^\dagger$LoRA evaluated on 50 matched episodes with 256-AA truncation
-         (see \S\ref{sec:lora_results}); not directly comparable in absolute
-         terms to other S2 rows (1{,}000 episodes, full-length sequences).}
+         ESM-2 LoRA results use a separate matched-episode protocol
+         and are reported in Table~\ref{tab:lora}.}
 \label{tab:main_results}
 \small
 \begin{tabular}{lcccc}
@@ -608,7 +606,6 @@ CNN ProtoNet (ours)     & 86.87\% & 71.00\% & 12.13\% & $+51.0$ pp \\
 k-mer 1-NN              & 91.38\% & 83.13\% &  9.73\% & $+63.1$ pp \\
 k-mer ProtoNet          & 92.13\% & 86.21\% &  9.35\% & $+66.2$ pp \\
 ESM-2 ProtoNet (frozen) & n/a     & \textbf{88.69\%} & \textbf{9.29\%} & $\mathbf{+68.7}$ \textbf{pp} \\
-ESM-2 + LoRA (ours)     & n/a     & 93.36\%$^\dagger$ & 4.28\%$^\dagger$ & $+73.4$ pp$^\dagger$ \\
 BLAST 1-NN              & 96.20\% & n/a     & --     & -- \\
 \textbf{BLAST ProtoNet} & \textbf{97.09\%} & n/a & -- & -- \\
 \bottomrule
@@ -624,7 +621,9 @@ genuinely harder task---more families, more inter-family similarity, and a
 truly held-out test set never seen during training or checkpoint selection.
 BLAST is excluded from S2 as the all-vs-all score matrix
 ($13{,}146^2 \approx 173\text{M}$ pairs) requires HPC resources beyond the scope
-of this study.
+of this study.  ESM-2 LoRA results are reported separately in
+Section~\ref{sec:lora_results} (Table~\ref{tab:lora}) using a matched-episode
+protocol that ensures a fair head-to-head comparison against frozen ESM-2.
 
 \subsection{K-Shot Sweep}
 
@@ -681,6 +680,11 @@ k-mer ProtoNet  & 69.7$\pm$12.5 & 77.9$\pm$11.1 & 86.2$\pm$9.4 & 90.6$\pm$7.2 & 
         from 9.9 pp ($K=1$) to 2.4 pp ($K=5$) and reverses at $K=20$
         (91.2\% vs 92.2\%), revealing that sufficient support makes compositional
         statistics competitive with evolutionary pre-training.
+  \item \textbf{ESM-2 + LoRA (episodic fine-tuning):} Under the matched
+        evaluation protocol (\S\ref{sec:lora_results}), LoRA adapters improve
+        over frozen ESM-2 at $K=1$ ($+2.5$~pp) but underperform at $K \geq 2$
+        ($-0.6$ to $-2.3$~pp), revealing a $K$-dependent interaction discussed
+        in detail in Section~\ref{sec:lora_results}.
 \end{enumerate}
 
 \subsection{ESM-2 LoRA Fine-Tuning Results}
@@ -688,16 +692,30 @@ k-mer ProtoNet  & 69.7$\pm$12.5 & 77.9$\pm$11.1 & 86.2$\pm$9.4 & 90.6$\pm$7.2 & 
 
 Table~\ref{tab:lora} shows a matched evaluation of ESM-2 with LoRA adapters
 against the frozen ESM-2 and k-mer ProtoNet baselines.  All three methods are
-evaluated on the \emph{same} 50 random episodes per $K$ value (5-way, $Q=10$),
-with sequences truncated to 256~AA.
+evaluated on the \emph{same} 1,000 random episodes per $K$ value (5-way,
+$Q=10$), with sequences truncated to 512~AA.
+
+\noindent\textbf{Note on frozen ESM-2 scores.}  The frozen ESM-2 column in
+Table~\ref{tab:lora} (e.g.\ 95.5\% at $K=5$) is higher than the standalone
+evaluation in Table~\ref{tab:kshot} (88.7\% at $K=5$).  This 6.8~pp gap
+arises from two protocol differences: (1)~sequences are truncated to
+512~AA here versus full-length in Table~\ref{tab:kshot}, which removes
+low-information padding and can improve embedding quality; and
+(2)~the two tables draw from independent episode samples.  Both evaluations
+use 1{,}000 episodes; the matched-eval figures should be interpreted only
+relative to each other (LoRA vs.\ frozen vs.\ k-mer), not as replacements
+for the absolute benchmark numbers in Table~\ref{tab:kshot}.
 
 \begin{table}[H]
 \centering
 \caption{Matched evaluation of ESM-2 LoRA vs.\ frozen ESM-2 and k-mer ProtoNet
-         on 24 held-out test families (50 matched episodes per $K$, 5-way, $Q=10$,
-         256-AA truncation).
+         on 24 held-out test families (1{,}000 matched episodes per $K$, 5-way,
+         $Q=10$, 512-AA truncation, T4 GPU).
+         LoRA column shows mean $\pm$ std; std is omitted for frozen and k-mer
+         columns as only means were logged during the matched evaluation run.
          $\Delta_{\mathrm{Frz}}$ = LoRA $-$ frozen (pp); \textbf{ns} = not significant
-         ($p \geq 0.05$, paired Wilcoxon); $^{***}p < 0.001$.}
+         ($p \geq 0.05$, paired Wilcoxon); $^{*}p < 0.05$; $^{***}p < 0.001$.
+         \textbf{Bold} = best per row.}
 \label{tab:lora}
 \small
 \setlength{\tabcolsep}{5pt}
@@ -706,28 +724,30 @@ with sequences truncated to 256~AA.
 $K$ & \textbf{LoRA} & \textbf{Frozen} & \textbf{k-mer} &
     $\Delta_{\mathrm{Frz}}$ & $\Delta_{\mathrm{kmer}}$ \\
 \midrule
- 1 & 84.3$\pm$9.4  & 83.8  & 72.9 & $+0.5$ ns & $+11.4^{***}$ \\
- 2 & 90.4$\pm$6.3  & 90.0  & 79.7 & $+0.3$ ns & $+10.6^{***}$ \\
- 5 & \textbf{93.4}$\pm$4.3  & \textbf{93.3}  & 85.9 & $+0.0$ ns & $+7.4^{***}$ \\
-10 & 92.8$\pm$5.8  & 92.5  & 91.8 & $+0.3$ ns & $+1.0$ ns \\
-20 & 94.7$\pm$3.6  & 94.3  & \textbf{95.5} & $+0.4$ ns & $-0.8$ ns \\
+ 1 & \textbf{88.8}$\pm$9.8 & 86.3 & 70.9 & $+2.5^{***}$ & $+17.9^{***}$ \\
+ 2 & 91.9$\pm$7.4  & \textbf{92.6} & 80.1 & $-0.6^{*}$   & $+11.8^{***}$ \\
+ 5 & 93.3$\pm$6.2  & \textbf{95.5} & 87.8 & $-2.2^{***}$ & $+5.5^{***}$  \\
+10 & 94.3$\pm$5.4  & \textbf{96.4} & 92.2 & $-2.1^{***}$ & $+2.1^{***}$  \\
+20 & 94.6$\pm$5.3  & \textbf{96.9} & 94.6 & $-2.3^{***}$ & $0.0$ ns      \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The central finding is that \textbf{LoRA adapters provide no statistically
-significant improvement over frozen ESM-2 at any $K$ value} (all differences
-$<0.5$~pp, all paired Wilcoxon tests non-significant).  ESM-2's pre-trained
-representations are already well-calibrated for protein family discrimination;
-episodic LoRA fine-tuning with the available data budget (10 training episodes
-per epoch, 20 epochs) cannot substantially move the adapter weights away from
-the frozen initialisation.
+The central finding is a \textbf{$K$-dependent interaction between episodic
+LoRA adaptation and prototype quality}.  At $K=1$, LoRA gains $+2.5$~pp over
+frozen ESM-2 ($p < 0.001$): when each class has only a single support sequence,
+the fine-tuned adapter produces a better single-sequence representation than the
+frozen encoder.  At $K \geq 2$, the pattern reverses---LoRA underperforms frozen
+ESM-2 by 0.6~pp ($K=2$, $p < 0.05$) to 2.3~pp ($K=20$, $p < 0.001$).  We
+interpret this as a \emph{prototype quality trade-off}: episodic fine-tuning on
+a 5-way $K{=}5$ objective optimises for 5-shot task discrimination, inadvertently
+degrading the multi-shot prototype averaging that benefits frozen representations.
 
-Compared to k-mer ProtoNet, both ESM-2 variants show large and significant
-advantages at low $K$ ($+11.4$~pp at $K=1$, $+7.4$~pp at $K=5$, both
-$p < 0.001$).  The advantage shrinks as $K$ grows, with k-mer slightly edging
-ahead at $K=20$ (95.5\% vs.\ 94.7\%), mirroring the crossover trend seen in
-the full-length 1{,}000-episode evaluation (Table~\ref{tab:kshot}).
+Compared to k-mer ProtoNet, LoRA shows large and significant advantages at low
+$K$ ($+17.9$~pp at $K=1$, $+5.5$~pp at $K=5$, both $p < 0.001$).  The gap
+narrows with increasing $K$, converging to 0.0~pp at $K=20$ (ns)---mirroring
+the crossover trend seen in the full-length 1{,}000-episode evaluation
+(Table~\ref{tab:kshot}).
 
 \subsection{Statistical Significance of CNN vs.\ k-mer ProtoNet}
 \label{sec:significance}
@@ -870,10 +890,14 @@ diverged families---where few-shot learning matters most---BLAST fails silently
 and a CNN ProtoNet can still classify by embedding similarity.
 
 \paragraph{155-family scale-up (S2).}
-On the larger corpus, performance tiers from Table~\ref{tab:kshot} are:
+On the larger corpus, performance tiers from Tables~\ref{tab:kshot}
+and~\ref{tab:lora} are ($K=5$, matched-eval protocol for LoRA):
 \[
-  \text{Random} \;<\; \text{CNN} \;<\; \text{k-mer} \;<\; \text{ESM-2 ProtoNet}
+  \text{Random} \;<\; \text{CNN} \;<\; \text{k-mer} \;<\;
+  \text{ESM-2 (frozen)} \;<\; \text{ESM-2 (LoRA, }K{=}1\text{)}
 \]
+where LoRA's position reverses at $K \geq 2$ (frozen ESM-2 $>$ LoRA), reflecting
+the $K$-dependent prototype-quality trade-off described in \S\ref{sec:lora_results}.
 Three factors explain the ordering:
 \begin{enumerate}[noitemsep,leftmargin=*]
   \item \textbf{Task-distribution overfitting.} The CNN peaks at epoch 16 (68.6\%)
@@ -882,8 +906,8 @@ Three factors explain the ordering:
   \item \textbf{Compositional diversity.} Across 155 families, global amino-acid
         composition is a strong signal.  3-mer features compactly capture this,
         explaining k-mer's advantage over CNN at all $K$ values.
-  \item \textbf{Evolutionary pre-training.} ESM-2, trained on 250M UniRef50
-        sequences, encodes deep evolutionary signals.  Even frozen and without
+  \item \textbf{Evolutionary pre-training.} ESM-2, trained on $\sim$65M UniRef50
+        sequences~\cite{lin2023evolutionary}, encodes deep evolutionary signals.  Even frozen and without
         any episodic training, it reaches 78.9\% at $K=1$ and 88.7\% at $K=5$
         --- a 14--18 pp gap over the from-scratch CNN.  However, the advantage
         over k-mer ProtoNet narrows with $K$: at $K=20$, k-mer (92.2\%) edges
@@ -907,7 +931,7 @@ informative given sufficient support.
 The 21-family experiment showed a pronounced train/val divergence at epoch 3.
 This is \emph{task-distribution overfitting}: with only 16 training families,
 the model memorises their compositional quirks rather than learning transferable
-motifs.  Scaling to 108 training families and training for 50 epochs with
+motifs.  Scaling to 105 training families and training for 50 epochs with
 cosine-annealing LR delays this effect substantially: validation accuracy peaks
 at 68.6\% at epoch 16 before declining while training accuracy continues to 91.3\%.
 Dataset scale thus delays task-distribution overfitting but does not eliminate it,
@@ -956,15 +980,15 @@ would force the model to discriminate on fine-grained motif features rather than
 global composition, directly targeting the gap seen at $K \geq 2$.
 
 \paragraph{ESM-2 LoRA fine-tuning.}
-We evaluated episodic fine-tuning of ESM-2 via LoRA ($r=8$, 61,440 trainable
-parameters) and found that it does \emph{not} significantly improve over frozen
-ESM-2 ($<0.5$~pp at all $K$, all ns; Table~\ref{tab:lora}).  This negative
-result is informative: the ESM-2 representations are already near-optimal for
-protein family ProtoNet classification under the current data regime.  Larger
-LoRA rank, more training episodes per epoch, longer training, or few-shot
-meta-learning objectives beyond standard ProtoNet (e.g.\ MAML-style
-inner-loop updates) may be needed to realise the potential of episodic
-encoder adaptation.
+We found a $K$-dependent interaction (Table~\ref{tab:lora}): LoRA improves on
+frozen ESM-2 at $K=1$ ($+2.5$~pp, $p < 0.001$) but underperforms at $K \geq 2$
+($-0.6$ to $-2.3$~pp, all $p \leq 0.05$).  The degradation at higher $K$
+suggests the episodic objective (5-way $K{=}5$) over-specialises the adapter
+for 5-shot scenarios, harming the multi-shot prototype averaging that benefits
+frozen representations.  Future work should explore: \emph{K-annealed} training
+objectives that vary shot count during training; adapter-weight regularisation
+(e.g.\ L2 toward the frozen initialisation) to preserve multi-shot quality; and
+harder negative mining to sharpen single-shot representations across all $K$.
 
 \paragraph{Attention-based support aggregation.}
 Prototypical Networks use simple support-set averaging.  Cross-attention
@@ -1007,12 +1031,13 @@ findings are:
         compositional statistics can match evolutionary pre-training given
         sufficient support examples.
 
-  \item \textbf{LoRA fine-tuning matches frozen ESM-2.}
-        Episodic LoRA adaptation ($r=8$, 0.81\% of parameters) yields
-        no statistically significant improvement over frozen ESM-2 at any $K$
-        ($<0.5$~pp, all ns).  This establishes frozen pre-training as a
-        surprisingly strong ceiling and motivates future work on larger adapters,
-        richer meta-learning objectives, and increased data budgets.
+  \item \textbf{LoRA reveals a $K$-dependent interaction.}
+        Episodic LoRA adaptation ($r=8$, 0.81\% of parameters, 30 GPU epochs)
+        improves on frozen ESM-2 at $K=1$ ($+2.5$~pp, $p < 0.001$) but
+        underperforms at $K \geq 2$ ($-0.6$ to $-2.3$~pp, all $p \leq 0.05$).
+        This reveals that episodic fine-tuning improves single-shot retrieval at
+        the cost of multi-shot prototype quality---a trade-off motivating
+        $K$-annealed training objectives and adapter regularisation.
 
   \item \textbf{Dataset scale delays overfitting.} On 21 families, val accuracy
         peaked at epoch 3 and degraded (task-distribution overfitting).
@@ -1028,11 +1053,12 @@ findings are:
 Taken together, the results chart a clear roadmap: the episodic ProtoNet
 framework is valid and scalable; the bottleneck for from-scratch training is
 task-distribution overfitting.  Frozen ESM-2 (88.7\% at $K=5$, 18~pp above CNN)
-establishes a strong performance ceiling that episodic LoRA fine-tuning cannot
-significantly surpass under the current data budget---pointing to richer
-meta-learning objectives, larger adapters, or increased episode counts as
-the next frontier.  The crossover between k-mer ProtoNet and ESM-2 at $K=20$
-further motivates studying how support-set size interacts with encoder quality.
+is a strong baseline, while episodic LoRA fine-tuning uncovers a nuanced
+$K$-dependent trade-off---improving at $K=1$ but degrading multi-shot prototype
+quality at $K \geq 2$.  This points to $K$-annealed training and adapter
+regularisation as the next frontier.  The crossover between k-mer ProtoNet and
+ESM-2 at $K=20$ further motivates studying how support-set size interacts with
+encoder quality.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \appendix
@@ -1095,7 +1121,7 @@ $L_2$-Normalize & $(B, 128)$ & 0 & unit hypersphere \\
   \item Random seed fixed to 42 via \texttt{random.seed(42)} and
         \texttt{torch.manual\_seed(42)}.
   \item Family-level split is deterministic (random shuffle with seed 42, then
-        70/15/15 index cut: 108 train / 23 val / 24 test families).
+        70/15/15 index cut: 105 train / 22 val / 24 test families).
   \item All hyperparameters in \texttt{data/configs/protonet.py}.
   \item Best checkpoint saved to \texttt{checkpoints/best\_protonet.pt}.
   \item Evaluation results saved to \texttt{results/eval\_summary.json}.
@@ -1143,6 +1169,11 @@ Zeming Lin, Halil Akin, Roshan Rao, et al.
 Yunhui Guo, Noel CF Codella, Leonid Karlinsky, et al.
 \newblock A broader study of cross-domain few-shot learning.
 \newblock In \emph{European Conference on Computer Vision}, 2020.
+
+\bibitem{rao2019tape}
+Roshan Rao, Nicholas Bhatt, Neil Thomas, et al.
+\newblock Evaluating protein transfer learning with TAPE.
+\newblock In \emph{Advances in Neural Information Processing Systems}, 2019.
 
 \bibitem{mcinnes2018umap}
 Leland McInnes, John Healy, and James Melville.

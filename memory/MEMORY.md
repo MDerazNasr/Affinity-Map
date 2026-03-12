@@ -34,14 +34,32 @@ Interactive dashboard: https://affinity-map-viz.streamlit.app/
 - CNN ProtoNet K=5: 86.87%
 - BLAST ProtoNet: 97.09% (upper bound)
 
+## ESM-2 LoRA Results (REAL — Colab T4 GPU, 30 epochs, 1000 matched episodes)
+Full spec: EPOCHS=30, EP_TRAIN=200, EP_VAL=100, EVAL_EP=1000, ESM_MAX_LEN=512, BATCH_SIZE=16
+Best val_acc=0.963 at epoch 8. Checkpoint: checkpoints/best_esm2_lora_ep*/
+
+| K  | LoRA           | Frozen | k-mer | ΔFrz       | Δkmer        |
+|----|----------------|--------|-------|------------|--------------|
+| 1  | 88.8% ± 9.8%  | 86.3%  | 70.9% | +2.5pp *** | +17.9pp ***  |
+| 2  | 91.9% ± 7.4%  | 92.6%  | 80.1% | -0.6pp *   | +11.8pp ***  |
+| 5  | 93.3% ± 6.2%  | 95.5%  | 87.8% | -2.2pp *** | +5.5pp ***   |
+| 10 | 94.3% ± 5.4%  | 96.4%  | 92.2% | -2.1pp *** | +2.1pp **    |
+| 20 | 94.6% ± 5.3%  | 96.9%  | 94.6% | -2.3pp *** | 0.0pp ns     |
+
+**Key finding**: K-dependent interaction — LoRA improves single-shot (K=1, +2.5pp p<0.001)
+but degrades multi-shot prototype quality (K≥2, -0.6 to -2.3pp, all p≤0.05).
+
 ## Key Files
 - `train_protonet.py` — main training loop (50 epochs, cosine annealing)
 - `models/encoder.py` — ProteinEncoderCNN (~190k params)
 - `models/protonet.py` — compute_prototypes, prototypical_logits
 - `data/configs/protonet.py` — CONF dict (N=5, K=5, Q=10, epochs=50, lr=5e-4)
 - `checkpoints/best_protonet.pt` — best checkpoint (epoch 13, val=76.6%)
-- `paper/affinity_map_paper.tex` — full LaTeX paper (~1000 lines, up to date)
-- `results/significance_tests.json` — Wilcoxon test results
+- `colab/esm2_finetune_full.py` — full-spec ESM-2 LoRA training (GPU, EPOCHS=30)
+- `colab/run_lora.ipynb` — Colab notebook (7 cells, mounts Drive, trains, saves)
+- `colab/pack_for_colab.sh` — creates protein_fewshot.zip for Drive upload
+- `paper/affinity_map_paper.tex` — full LaTeX paper (UPDATED with real results)
+- `results/significance_tests.json` — Wilcoxon test results (CNN vs k-mer)
 - `results/kshot_sweep.json` — CNN ProtoNet K-shot results
 - `script/significance_tests.py` — paired Wilcoxon test script
 - `script/embed_and_plot.py` — PCA, UMAP, prototype heatmap figures
@@ -68,8 +86,12 @@ PCA embeddings, UMAP embeddings, prototype distance heatmap.
 - k-mer vectors: 3-mer frequency (20^3=8000 dims), L2-normalised
 - Eligibility for significance tests: families with ≥ K+10 sequences
 - Significance test uses matched episodes (same episode for CNN and k-mer)
+- MPS kills ESM-2 LoRA backprop (attention activation ~8GB). Must use CPU or GPU.
+- Colab T4 is the reference hardware for LoRA training
 
 ## Key Bugs Fixed (historical)
 1. train_protonet.py: validation/checkpoint code outside epoch for-loop (bad indent)
 2. utils/eval.py: parameter named `epsiodes` instead of `episodes`
 3. k-mer significance tests: float32 overflow fixed by .astype(np.float64)
+4. Colab Cell 3: unzip goes to /content/ directly (no subdirectory), os.chdir("/content")
+5. Colab Cell 7: needs os.chdir("/content") at top (Drive wipe between cells)
