@@ -1,7 +1,7 @@
 \documentclass[11pt,a4paper]{article}
 
 % ─── Packages ────────────────────────────────────────────────────────────────
-\usepackage[margin=2.4cm]{geometry}
+\usepackage[margin=2.4cm, top=2.6cm]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{graphicx}
@@ -48,6 +48,7 @@
 }
 \author{
   Mohammed El-Raznasr\\
+  \textit{School of Computational Science and Engineering}\\
   \textit{Georgia Institute of Technology}
 }
 \date{March 2026}
@@ -61,8 +62,8 @@
 \begin{abstract}
 Protein family annotation is a cornerstone of computational biology, yet the
 acquisition of large, curated per-family corpora is laborious and often
-infeasible for rare families.  We present \textbf{Affinity Map}, a meta-learning
-pipeline that frames protein family classification as a \emph{few-shot learning}
+infeasible for rare families.  We introduce \textbf{Affinity Map}, a meta-learning
+framework that frames protein family classification as a \emph{few-shot learning}
 problem: given only $K$ labelled examples from a previously unseen family, the
 model must correctly assign new sequences to that family.  We systematically
 benchmark encoder quality under this episodic framework, ranging from a
@@ -105,8 +106,8 @@ All code and results are publicly available.
 % ─────────────────────────────────────────────────────────────────────────────
 
 Proteins are the primary molecular machines of life, and their functional
-classification into families---groups sharing structural, evolutionary, and
-biochemical characteristics---is fundamental to genomics, drug discovery, and
+classification into families, groups sharing structural, evolutionary, and
+biochemical characteristics, is fundamental to genomics, drug discovery, and
 biomedical research.  The Pfam database~\cite{mistry2021pfam}, which catalogs
 over 19,000 families, relies on hidden Markov models (HMMs) trained on
 \emph{many} curated sequences per entry.  For novel or rare families this
@@ -114,7 +115,7 @@ requirement is a hard bottleneck.
 
 Meanwhile, the field of \emph{few-shot learning} (FSL) has demonstrated that
 models can learn to generalise to new categories from very few examples, provided
-they are trained to \emph{learn how to learn}---that is, to produce embeddings
+they are trained to \emph{learn how to learn}, that is, to produce embeddings
 where intra-class proximity is maximised and inter-class proximity is minimised.
 \textbf{Prototypical Networks}~\cite{snell2017prototypical} represent one of the
 clearest and most analytically tractable instantiations of this idea: each class
@@ -130,9 +131,8 @@ Pfam database.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*,noitemsep]
-  \item A modular few-shot protein classification pipeline (automated Pfam
-        download, data cleaning, tokenisation, episodic training, evaluation,
-        and interactive visualisation) scaling from 21 to 155 families.
+  \item A robust meta-learning framework for few-shot protein annotation (integrating automated Pfam
+        retrieval, tokenisation, and episodic training) demonstrating scalability across 155 diverse families.
   \item A systematic three-tier encoder benchmark (from-scratch CNN, k-mer
         composition, frozen ESM-2) establishing the performance ceiling of
         frozen pre-trained representations under a rigorous 70/15/15
@@ -294,7 +294,7 @@ sequences falling below 500 residues.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.60\textwidth]{../results/length_hist.png}
+  \includegraphics[width=0.60\textwidth]{length_hist.png}
   \caption{Distribution of unpadded amino-acid sequence lengths across all
            retained families.  The red dashed line marks the padding cutoff
            $L = 400$; the histogram illustrates that the majority of sequences
@@ -338,7 +338,7 @@ a dozen amino acids.
   \vect{h} = \texttt{AdaptiveAvgPool1d}(1)\!\left(\mat{H}^{(3)}\right) \in \R^{128},
 \]
 collapsing the length dimension into a single fixed-length vector independent of
-sequence length---a critical property for handling variable-length proteins.
+sequence length, a critical property for handling variable-length proteins.
 
 \paragraph{(4) Projection and $L_2$ Normalisation.}
 \[
@@ -352,7 +352,7 @@ stabilising Euclidean distances.
 \paragraph{Parameter count.}
 The encoder has approximately $21 \times 64 + 64 \times 128 \times 5 +
 128 \times 128 \times 5 + 128 \times 128 \times 3 + 128 \times 128 \approx
-228\,000$ parameters---a deliberately lightweight design that avoids
+228\,000$ parameters, a deliberately lightweight design that avoids
 pre-training requirements.
 
 \subsection{Prototypical Networks}
@@ -447,7 +447,7 @@ Algorithm~\ref{alg:training} summarises the full training procedure.
 Critically, the data split is performed at the \emph{family} level, not the
 sequence level.  The validation set is used only for checkpoint selection; the
 test set is never seen during training or model selection, ensuring that all
-reported S2 results reflect genuine generalisation to \emph{unseen classes}---the
+reported S2 results reflect genuine generalisation to \emph{unseen classes}, the
 core requirement of few-shot learning.
 
 \subsection{ESM-2 Episodic Fine-Tuning via LoRA}
@@ -458,9 +458,8 @@ ESM-2 baseline, we apply Low-Rank Adaptation
 (LoRA)~\cite{hu2022lora} to the ESM-2 8M encoder.  LoRA inserts trainable
 low-rank matrices into the query and value projection layers of each attention
 block, leaving all other parameters frozen.  With rank $r=8$ and $\alpha=16$,
-the adapter introduces \textbf{61,440} trainable parameters---under 1\% of
-the base model's 7.6M parameters (0.81\%)---while enabling the representations
-to specialise toward the episodic classification objective.
+the adapter introduces \textbf{61,440} trainable parameters, under 1\% of
+        the base model's 7.6M parameters (0.81\%), while enabling the representationsto specialise toward the episodic classification objective.
 
 The fine-tuning procedure mirrors Algorithm~\ref{alg:training}: identical
 episodic sampling ($N=5$, $K=5$, $Q=10$), cosine-similarity ProtoNet logits,
@@ -557,13 +556,13 @@ Figure~\ref{fig:curves} shows training loss and accuracy across all 50 epochs
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{../results/fig_learning_curves.png}
+  \includegraphics[width=\textwidth]{fig_learning_curves.png}
   \caption{Training loss (right) and episode-level accuracy (left) per epoch
            on the 155-family dataset (105 training / 22 validation / 24 test families),
            trained for 50 epochs with cosine-annealing LR ($T_{\max}=50$).
            Training accuracy rises from 57.7\% (epoch 1) to 91.3\% (epoch 50).
            Validation accuracy peaks at \textbf{68.6\%} at epoch 16, then
-           gradually declines---a delayed form of task-distribution overfitting
+           gradually declines, a delayed form of task-distribution overfitting
            compared to the 21-family setting (epoch 3).  The best checkpoint
            (epoch 16, val\_acc $= 0.686$) is used for all S2 evaluation.}
   \label{fig:curves}
@@ -577,7 +576,7 @@ memorised their compositional quirks.  With 105 training families and a
 held-out test set of 24 families, the episode space is diverse enough to
 delay this effect: validation accuracy peaks at 68.6\% at epoch 16 before
 gradually declining as training accuracy continues climbing to 91.3\%.
-This confirms that dataset scale delays---but does not eliminate---task-distribution
+This confirms that dataset scale delays, but does not eliminate, task-distribution
 overfitting, motivating stronger regularisation and harder negative mining as next steps.
 
 \subsection{Few-Shot Accuracy and Baseline Comparison}
@@ -617,7 +616,7 @@ and CNN ProtoNet (86.9\%) lies below all alignment-based baselines.  Evaluating
 on the 24 held-out test families (S2) reveals: CNN ProtoNet at 71.0\%,
 k-mer ProtoNet at 86.2\% (+15.2 pp), and frozen ESM-2 ProtoNet at 88.7\%
 (+17.7 pp over CNN).  All methods decline relative to S1, reflecting the
-genuinely harder task---more families, more inter-family similarity, and a
+genuinely harder task: more families, more inter-family similarity, and a
 truly held-out test set never seen during training or checkpoint selection.
 BLAST is excluded from S2 as the all-vs-all score matrix
 ($13{,}146^2 \approx 173\text{M}$ pairs) requires HPC resources beyond the scope
@@ -632,7 +631,7 @@ $K \in \{1, 2, 5, 10, 20\}$ for all four methods.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.88\textwidth]{../results/fig_kshot_sweep.png}
+  \includegraphics[width=0.88\textwidth]{fig_kshot_sweep.png}
   \caption{5-way accuracy vs.\ number of support examples $K$ for CNN ProtoNet
            (ours), k-mer 1-NN, and k-mer ProtoNet on the 24 held-out test
            families (S2), including the frozen ESM-2 ProtoNet.
@@ -737,7 +736,7 @@ The central finding is a \textbf{$K$-dependent interaction between episodic
 LoRA adaptation and prototype quality}.  At $K=1$, LoRA gains $+2.5$~pp over
 frozen ESM-2 ($p < 0.001$): when each class has only a single support sequence,
 the fine-tuned adapter produces a better single-sequence representation than the
-frozen encoder.  At $K \geq 2$, the pattern reverses---LoRA underperforms frozen
+frozen encoder.  At $K \geq 2$, the pattern reverses: LoRA underperforms frozen
 ESM-2 by 0.6~pp ($K=2$, $p < 0.05$) to 2.3~pp ($K=20$, $p < 0.001$).  We
 interpret this as a \emph{prototype quality trade-off}: episodic fine-tuning on
 a 5-way $K{=}5$ objective optimises for 5-shot task discrimination, inadvertently
@@ -745,7 +744,7 @@ degrading the multi-shot prototype averaging that benefits frozen representation
 
 Compared to k-mer ProtoNet, LoRA shows large and significant advantages at low
 $K$ ($+17.9$~pp at $K=1$, $+5.5$~pp at $K=5$, both $p < 0.001$).  The gap
-narrows with increasing $K$, converging to 0.0~pp at $K=20$ (ns)---mirroring
+narrows with increasing $K$, converging to 0.0~pp at $K=20$ (ns), mirroring
 the crossover trend seen in the full-length 1{,}000-episode evaluation
 (Table~\ref{tab:kshot}).
 
@@ -753,9 +752,8 @@ the crossover trend seen in the full-length 1{,}000-episode evaluation
 \label{sec:significance}
 
 To confirm that observed accuracy differences are not due to sampling noise,
-we ran 1{,}000 \emph{matched} episodes per $K$ value---identical sampled
-families and sequences for all four methods---and applied paired Wilcoxon
-signed-rank tests (non-parametric, no normality assumption).  Effect size is
+we ran 1{,}000 \emph{matched} episodes per $K$ value, identical sampled
+         families and sequences for all four methods, and applied paired Wilcoxonsigned-rank tests (non-parametric, no normality assumption).  Effect size is
 the rank-biserial correlation $r = 1 - 2W / (n(n+1)/2)$.
 
 \begin{table}[H]
@@ -795,7 +793,7 @@ from 1{,}000 matched evaluation episodes.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.82\textwidth]{../results/fig_episode_hist.png}
+  \includegraphics[width=0.82\textwidth]{fig_episode_hist.png}
   \caption{Distribution of per-episode accuracy over 500 episodes (CNN ProtoNet,
            5-way 5-shot, cosine metric, 24 held-out test families).
            Mean $= 71.7\%$, std $= 11.8\%$.
@@ -815,7 +813,7 @@ held-out test families.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{../results/fig_named_confusion.png}
+  \includegraphics[width=\textwidth]{fig_named_confusion.png}
   \caption{Normalised confusion matrix over 300 episodes (5-way 5-shot,
            155-family S2 setting), with axes labelled by Pfam family names.
            Each row sums to 1.0.  The generally strong diagonal confirms that
@@ -833,7 +831,7 @@ held-out test families.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.82\textwidth]{../results/pca_embeddings.png}
+  \includegraphics[width=0.82\textwidth]{pca_embeddings.png}
   \caption{PCA projection (2D) of all 128-dimensional protein embeddings,
            coloured by family.  Tight intra-family clusters and substantial
            inter-family separation confirm that the encoder has learned
@@ -845,7 +843,7 @@ held-out test families.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.82\textwidth]{../results/umap_embeddings.png}
+  \includegraphics[width=0.82\textwidth]{umap_embeddings.png}
   \caption{UMAP 2D projection ($n\_\text{neighbors}=15$, $\text{min\_dist}=0.1$,
            cosine metric) of all protein embeddings.  Local neighbourhood
            structure is better preserved than PCA; some families (e.g.\
@@ -859,11 +857,11 @@ held-out test families.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.78\textwidth]{../results/prototype_distance_heatmap.png}
+  \includegraphics[width=0.78\textwidth]{prototype_distance_heatmap.png}
   \caption{Pairwise cosine distance between family prototypes (mean of all
            embeddings per family).  Most inter-prototype distances exceed 0.5,
            confirming well-separated class centroids.  Smaller off-diagonal
-           values identify families that share sequence composition---a
+           values identify families that share sequence composition, a
            biologically interpretable signal.}
   \label{fig:heatmap}
 \end{figure}
@@ -886,7 +884,7 @@ thousands of curated alignment blocks.  Our CNN, trained from scratch on 16
 families for 10 epochs, has no access to this prior.  Crucially, only
 $\mathbf{6.1\%}$ of all $1{,}208^2 = 1{,}459{,}264$ pairs produced a non-zero
 BLAST bit-score (88,833 non-zero entries).  For genuinely novel or highly
-diverged families---where few-shot learning matters most---BLAST fails silently
+diverged families, where few-shot learning matters most, BLAST fails silently
 and a CNN ProtoNet can still classify by embedding similarity.
 
 \paragraph{155-family scale-up (S2).}
@@ -908,8 +906,7 @@ Three factors explain the ordering:
         explaining k-mer's advantage over CNN at all $K$ values.
   \item \textbf{Evolutionary pre-training.} ESM-2, trained on $\sim$65M UniRef50
         sequences~\cite{lin2023evolutionary}, encodes deep evolutionary signals.  Even frozen and without
-        any episodic training, it reaches 78.9\% at $K=1$ and 88.7\% at $K=5$
-        --- a 14--18 pp gap over the from-scratch CNN.  However, the advantage
+        any episodic training, it reaches 78.9\% at $K=1$ and 88.7\% at $K=5$, a 14--18 pp gap over the from-scratch CNN.  However, the advantage
         over k-mer ProtoNet narrows with $K$: at $K=20$, k-mer (92.2\%) edges
         ESM-2 (91.2\%), suggesting that sufficient support examples allow
         compositional statistics to match evolutionary embeddings.
@@ -960,7 +957,7 @@ stacking three layers yields an effective receptive field of 12 residues,
 sufficient to detect known functional motifs (e.g.\ the CAAX tetrapeptide, RGD
 integrin-binding tripeptide, and C2H2 zinc-finger double-loop of $\sim$12
 residues).  Global average pooling aggregates motif-presence signals across the
-full sequence, making the embedding position-invariant---appropriate because
+full sequence, making the embedding position-invariant, appropriate because
 functional motifs appear at varying positions across family members.
 
 \subsection{Limitations and Future Directions}
@@ -1036,13 +1033,13 @@ findings are:
         improves on frozen ESM-2 at $K=1$ ($+2.5$~pp, $p < 0.001$) but
         underperforms at $K \geq 2$ ($-0.6$ to $-2.3$~pp, all $p \leq 0.05$).
         This reveals that episodic fine-tuning improves single-shot retrieval at
-        the cost of multi-shot prototype quality---a trade-off motivating
+        the cost of multi-shot prototype quality, a trade-off motivating
         $K$-annealed training objectives and adapter regularisation.
 
   \item \textbf{Dataset scale delays overfitting.} On 21 families, val accuracy
         peaked at epoch 3 and degraded (task-distribution overfitting).
         On 155 families with cosine-annealing LR, val accuracy peaks at 68.6\%
-        at epoch 16 before declining---confirming that family diversity delays
+        at epoch 16 before declining, confirming that family diversity delays
         but does not eliminate the overfitting dynamic.
 
   \item \textbf{Named confusion matrix.} A 155-family confusion heatmap provides
@@ -1054,7 +1051,7 @@ Taken together, the results chart a clear roadmap: the episodic ProtoNet
 framework is valid and scalable; the bottleneck for from-scratch training is
 task-distribution overfitting.  Frozen ESM-2 (88.7\% at $K=5$, 18~pp above CNN)
 is a strong baseline, while episodic LoRA fine-tuning uncovers a nuanced
-$K$-dependent trade-off---improving at $K=1$ but degrading multi-shot prototype
+$K$-dependent trade-off: improving at $K=1$ but degrading multi-shot prototype
 quality at $K \geq 2$.  This points to $K$-annealed training and adapter
 regularisation as the next frontier.  The crossover between k-mer ProtoNet and
 ESM-2 at $K=20$ further motivates studying how support-set size interacts with
