@@ -4,14 +4,14 @@
 
 ---
 
-## 🚀 Key Highlights
+## Key Highlights
 - **State-of-the-Art Foundation Models:** Utilizes Meta’s **ESM-2 (8M to 650M parameters)** as a sequence encoder.
 - **Novel Research Insight:** Discovered a $K$-dependent interaction where **LoRA (Low-Rank Adaptation)** episodic fine-tuning improves single-shot ($K=1$) accuracy by +2.5% but requires specific regularization for multi-shot scenarios.
 - **Rigorous Benchmarking:** Evaluated against BLAST (bioinformatics gold standard) and k-mer compositional baselines.
 
 ---
 
-## 🔬 Methodology
+## Methodology
 The pipeline treats protein classification as an **episodic task**:
 1. **Encoding:** Raw amino acid sequences are embedded into a high-dimensional metric space.
 2. **Prototyping:** A "Class Prototype" is calculated as the mean embedding of $K$ support sequences.
@@ -27,7 +27,7 @@ The pipeline treats protein classification as an **episodic task**:
 
 ---
 
-## 📊 Results & Visualization
+## Results & Visualization
 The model learns a biologically meaningful embedding space where proteins cluster by structural and functional similarity.
 
 <div align="center">
@@ -39,7 +39,7 @@ The model learns a biologically meaningful embedding space where proteins cluste
 
 ---
 
-## 🛠️ Installation & Usage
+## Installation & Usage
 
 ### 1. Setup Environment
 ```bash
