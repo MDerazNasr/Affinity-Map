@@ -35,7 +35,7 @@ The model learns a biologically meaningful embedding space where proteins cluste
   <img src="results/fig_named_confusion.png" width="450px" alt="Confusion Matrix">
 </div>
 
-*Left: PCA projection of protein embeddings. Right: Confusion matrix showing structural overlaps between families like Immunoglobulins and Cupins.*
+*Top : PCA projection of protein embeddings. Bottom: Confusion matrix showing structural overlaps between families like Immunoglobulins and Cupins.*
 
 ---
 
